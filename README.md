@@ -5,7 +5,7 @@
 ```sh
 <root>/
   client/ <-- [web2] client / api using next.js
-  solidity/ <-- [web3] contract code / tests / tasks using hardhat and ethers.js
+  evm/ <-- [web3] contract code / tests / tasks using hardhat and ethers.js
   package.json <-- scripts to control each component or together as a system
 ```
 
@@ -20,7 +20,7 @@ in `.vscode/` there are some recommended workspace extensions and settings. you 
 the client `client/tsconfig.json` has aliases set up for importing:
 
 - `@styles/*`: any CSS in the `client/styles/` dir
-- `@contracts/*`: any contract ABI in `solidity/artifacts/contracts/<ContractName.sol>/<ContractName>.json`
+- `@contracts/*`: any contract ABI in `evm/artifacts/contracts/<ContractName.sol>/<ContractName>.json`
 
 > example
 
@@ -36,18 +36,18 @@ import GreeterABI from "@contracts/Greeter.sol/Greeter.json";
 
 ### scripts
 
-the top-level `package.json` contains scripts to run the `client/` and `solidity/` scripts individually or as a system
+the top-level `package.json` contains scripts to run the `client/` and `evm/` scripts individually or as a system
 
-- individual: `npm run client: -- <script>` or `npm run solidity: -- <script>`
+- individual: `npm run client: -- <script>` or `npm run evm: -- <script>`
 - together: top-level scripts (below)
 
-1. install (installs deps for client and solidity components)
+1. install (installs deps for client and evm components)
 
 ```sh
 npm install
 ```
 
-2. run dev mode (compiles solidity and runs next.js dev mode)
+2. run dev mode (compiles evm and runs next.js dev mode)
 
 ```sh
 npm run dev
