@@ -1,0 +1,42 @@
+{
+  "name": "nfnovel-client",
+  "version": "0.1.0",
+  "private": true,
+  "license": "UNLICENSED",
+  "author": "the-vampiire",
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "prettier-eslint \"src/**/*.@(ts|tsx)\" --list-different",
+    "fix": "prettier-eslint \"src/**/*.@(ts|tsx)\" --write"
+  },
+  "dependencies": {
+    "axios": "^0.26.1",
+    "ethers": "^5.6.4",
+    "next": "12.1.5",
+    "next-connect": "^0.12.2",
+    "react": "18.0.0",
+    "react-dom": "18.0.0",
+    "swr": "^1.3.0"
+  },
+  "devDependencies": {
+    "@types/node": "17.0.25",
+    "@types/react": "18.0.5",
+    "@types/react-dom": "18.0.1",
+    "@typescript-eslint/eslint-plugin": "^5.0.1",
+    "@typescript-eslint/parser": "^5.0.1",
+    "eslint": "^7.3.2",
+    "eslint-config-next": "12.1.5",
+    "eslint-config-prettier": "^8.0.0",
+    "eslint-plugin-eslint-comments": "^3.2.0",
+    "eslint-plugin-import": "^2.22.0",
+    "eslint-plugin-jest": "^25.2.4",
+    "eslint-plugin-newline-destructuring": "^1.0.1",
+    "eslint-plugin-react-hooks": "^4.4.0",
+    "prettier": "^2.4.1",
+    "prettier-eslint": "^13.0.0",
+    "prettier-eslint-cli": "^5.0.1",
+    "typescript": "4.6.3"
+  }
+}
