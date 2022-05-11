@@ -3,17 +3,23 @@ pragma solidity ^0.8.0;
 
 import "./structures.sol";
 
-interface INFNovel {
+interface OpenSeaCompatible {
+    // OpenSea: https://docs.opensea.io/docs/metadata-standards#freezing-metadata
+    event PermanentURI(string tokenURI, uint256 tokenId);
+}
+
+interface INFNovel is OpenSeaCompatible {
     error PageNotFound();
+    error PageAlreadyRevealed();
     error PanelNotSold(uint256 panelTokenId);
     error PanelAuctionNotEnded(uint256 panelAuctionId);
     error NotPanelAuctionWinner(uint256 panelAuctionId);
 
-    // OpenSea: https://docs.opensea.io/docs/metadata-standards#freezing-metadata
-    event PermanentURI(string tokenURI, uint256 tokenId);
+    // FUTURE:
+    // event CreatorAdded(Creator creator);
+    // event CreatorModified(Creator creator);
 
     event PageAdded(uint256 pageNumber, uint256[] panelTokenIds);
-    event PageSold(uint256 pageNumber, uint256[] panelTokenIds);
     event PageRevealed(uint256 pageNumber, uint256[] panelTokenIds);
 
     function addPage(uint8 panelsCount, string calldata obscuredBaseURI)
