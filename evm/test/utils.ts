@@ -1,6 +1,6 @@
 import { ethers } from "hardhat";
 
-import type { Signer, Contract } from "ethers";
+import { Signer, Contract, BigNumber, utils } from "ethers";
 import type { NFNovel, NFNovels } from "../typechain";
 
 /**
@@ -67,3 +67,14 @@ export const getTestSigningAccounts: () => Promise<
     signers.map(async (signer) => [signer, await signer.getAddress()])
   );
 };
+
+export const computeInterfaceId = (
+  contractInterface: utils.Interface
+): string =>
+  Object.keys(contractInterface.functions)
+    .reduce(
+      (interfaceId, contractFunction) =>
+        interfaceId.xor(contractInterface.getSighash(contractFunction)),
+      BigNumber.from(0)
+    )
+    .toHexString();
