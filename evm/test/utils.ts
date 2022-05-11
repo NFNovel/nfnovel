@@ -69,12 +69,27 @@ export const getTestSigningAccounts: () => Promise<
 };
 
 export const computeInterfaceId = (
-  contractInterface: utils.Interface
-): string =>
-  Object.keys(contractInterface.functions)
-    .reduce(
-      (interfaceId, contractFunction) =>
-        interfaceId.xor(contractInterface.getSighash(contractFunction)),
-      BigNumber.from(0)
-    )
+  contractInterface: utils.Interface,
+  ...extendedInterfaces: utils.Interface[]
+): string => {
+  const functions = extendedInterfaces.length
+    ? // if extended interfaces are included then merge all function signatures together[
+      [
+        ...Object.keys(contractInterface.functions),
+        ...extendedInterfaces.reduce(
+          (extendedFunctions: string[], extendedInterface) => [
+            ...extendedFunctions,
+            ...Object.keys(extendedInterface.functions),
+          ],
+          []
+        ),
+      ]
+    : // otherwise just use functions from the individual contract interface
+      Object.keys(contractInterface.functions);
+
+  return functions
+    .reduce((interfaceId, contractFunction) => {
+      return interfaceId.xor(contractInterface.getSighash(contractFunction));
+    }, BigNumber.from(0))
     .toHexString();
+};
