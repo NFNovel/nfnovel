@@ -29,6 +29,20 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
         ERC721(novelTitle, novelSymbol)
     {}
 
+    function mintPanel(uint256 panelTokenId) public override returns (bool) {
+        Auction storage panelAuction = _getAuction(panelAuctions[panelTokenId]);
+
+        if (panelAuction.state != AuctionStates.Ended)
+            revert PanelAuctionNotEnded(panelAuction.id);
+
+        if (panelAuction.highestBidder != msg.sender)
+            revert NotPanelAuctionWinner(panelAuction.id);
+
+        _safeMint(msg.sender, panelTokenId);
+
+        return true;
+    }
+
     function addPage(uint8 panelsCount, string calldata obscuredBaseURI)
         public
         override
@@ -49,24 +63,10 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
 
             panelPages[panelTokenId] = pageNumber;
             pages[pageNumber].panelTokenIds[panelIndex] = panelTokenId;
-            panelAuctions[panelTokenId] = startDefaultAuction(panelTokenId);
+            panelAuctions[panelTokenId] = _startAuction(panelTokenId);
         }
 
         emit PageAdded(pageNumber, pages[pageNumber].panelTokenIds);
-    }
-
-    function mintPanel(uint256 panelTokenId) public override returns (bool) {
-        Auction storage panelAuction = getAuction(panelAuctions[panelTokenId]);
-
-        if (panelAuction.state != AuctionStates.Ended)
-            revert PanelAuctionNotEnded(panelAuction.id);
-
-        if (panelAuction.highestBidder != msg.sender)
-            revert NotPanelAuctionWinner(panelAuction.id);
-
-        _safeMint(msg.sender, panelTokenId);
-
-        return true;
     }
 
     function revealPage(uint256 pageNumber, string calldata revealedBaseURI)
@@ -77,7 +77,7 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
         Page storage page = _getPage(pageNumber);
 
         // prevents the panel token URI ever being changed after being revealed
-        require(page.isRevealed == false, "Page has already been revealed");
+        if (page.isRevealed == true) revert PageAlreadyRevealed();
 
         for (
             uint256 panelIndex = 0;
@@ -118,10 +118,6 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
         ) {
             if (!_exists(panelTokenIds[panelIndex])) return false;
         }
-
-        // THINK: why?
-        // TypeError: Function declared as view, but this expression (potentially) modifies the state and thus requires non-payable (the default) or payable.
-        // emit PageSold(pageNumber, panelTokenIds);
 
         return true;
     }

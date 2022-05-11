@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "./NFNovel.sol";
 
 contract NFNovels is Ownable {
+    using Strings for uint256;
     using Counters for Counters.Counter;
 
     Counters.Counter private _novelIds;
@@ -41,8 +42,6 @@ contract NFNovels is Ownable {
         pure
         returns (string memory novelSymbol)
     {
-        novelSymbol = string(
-            abi.encodePacked("NFN-", Strings.toString(novelId))
-        );
+        novelSymbol = string(abi.encodePacked("NFN-", novelId.toString()));
     }
 }

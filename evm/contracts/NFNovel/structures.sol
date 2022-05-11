@@ -8,13 +8,15 @@ struct Page {
     uint256[] panelTokenIds;
 }
 
-enum ArtistTypes {
-    Writer,
-    Artist
-}
+// FUTURE:
+// enum ArtistTypes {
+//     Writer,
+//     Illustator
+// }
 
-struct Creator {
-    address payable withdrawAddress;
-    ArtistTypes artistType;
-    uint8 royaltyPercent;
-}
+// FUTURE:
+// struct Creator {
+//     address payable withdrawAddress;
+//     ArtistTypes artistType;
+//     uint8 royaltyPercent;
+// }
