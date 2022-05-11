@@ -2,22 +2,34 @@ import "dotenv/config";
 import { ethers } from "hardhat";
 import recordDeployment from "./record-deployment";
 
-const deployContract = async (contractName: string) => {
-  const ContractFactory = await ethers.getContractFactory(contractName);
-  const contract = await ContractFactory.deploy();
+interface IContract {
+  name: string;
+  args: unknown[];
+}
 
-  await contract.deployed();
+const deployContract = async (contract: IContract) => {
+  const { name, args } = contract;
 
-  const deploymentRecord = await recordDeployment(contractName, contract);
-  console.log(`${contractName} deployed:`, deploymentRecord);
+  const ContractFactory = await ethers.getContractFactory(name);
+  const contractInstance = await ContractFactory.deploy(...args);
+  console.log({ gas: contractInstance.estimateGas });
+  await contractInstance.deployed();
+
+  const deploymentRecord = await recordDeployment(name, contractInstance);
+  console.log(`${name} deployed:`, deploymentRecord);
 };
 
 async function main() {
   // set the contract name(s) in here
   // NOTE: must match the <name>.sol file, ex: for Greeter.sol contractName = "Greeter"
-  const contractNames = [""];
+  const contracts: IContract[] = [
+    {
+      name: "NFNovels",
+      args: [],
+    },
+  ];
 
-  await Promise.all(contractNames.map(deployContract));
+  await Promise.all(contracts.map(deployContract));
 }
 
 main().catch((error) => {

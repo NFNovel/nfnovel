@@ -30,8 +30,8 @@ const recordDeployment: (
     deployedAt: new Date().toISOString(),
     contractAddress: deployedContract.address,
     network: {
-      name: network.name,
       chainId: network.chainId || "hardhat-ephemeral-node",
+      name: network.name === "unknown" ? "hardhat" : network.name,
     },
   };
 
