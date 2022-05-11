@@ -1,6 +1,6 @@
 // source: https://gist.github.com/the-vampiire/1b4e8cd92b20dc4f034457c926210965
 
-export const INTERFACE_IDS = {
+export const OZ_INTERFACE_IDS = {
   ERC165: "0x01ffc9a7",
   ERC721: "0x80ac58cd",
   ERC721Enumerable: "0x780e9d63",
