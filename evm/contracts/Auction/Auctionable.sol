@@ -4,12 +4,15 @@ pragma solidity ^0.8.0;
 import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
 
-import "./AuctionManagement.sol";
 import "./structures.sol";
+import "./AuctionManagement.sol";
 
 abstract contract Auctionable is Ownable {
     using Counters for Counters.Counter;
     using AuctionManagement for Auction;
+
+    error AuctionNotFound();
+    event AuctionDefaultsUpdated(AuctionSettings newDefaults);
 
     Counters.Counter private _auctionIds;
 
@@ -21,9 +24,6 @@ abstract contract Auctionable is Ownable {
             0 wei, // starting value (0 ETH)
             1000000000000000 wei // minimum bid (0.001 ETH)
         );
-
-    error AuctionNotFound();
-    event AuctionDefaultsUpdated(AuctionSettings newDefaults);
 
     function auctionTimeRemaining(uint256 auctionId)
         public

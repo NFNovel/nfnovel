@@ -29,6 +29,19 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
         ERC721(novelTitle, novelSymbol)
     {}
 
+    function supportsInterface(bytes4 interfaceId)
+        public
+        view
+        virtual
+        override(ERC721)
+        returns (bool)
+    {
+        return
+            interfaceId == type(Ownable).interfaceId ||
+            interfaceId == type(Auctionable).interfaceId ||
+            super.supportsInterface(interfaceId);
+    }
+
     function mintPanel(uint256 panelTokenId) public override returns (bool) {
         Auction storage panelAuction = _getAuction(panelAuctions[panelTokenId]);
 
