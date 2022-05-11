@@ -15,48 +15,44 @@ abstract contract Auctionable is Ownable {
 
     mapping(uint256 => Auction) public auctions;
 
-    AuctionDefaults public auctionDefaults =
-        AuctionDefaults(
+    AuctionSettings public auctionDefaults =
+        AuctionSettings(
             1 days, // auction duration
             0 wei, // starting value (0 ETH)
             1000000000000000 wei // minimum bid (0.001 ETH)
         );
 
     error AuctionNotFound();
+    event AuctionDefaultsUpdated(AuctionSettings newDefaults);
 
     function auctionTimeRemaining(uint256 auctionId)
         public
         view
         returns (uint256)
     {
-        return getAuction(auctionId).endTime - block.timestamp;
+        return _getAuction(auctionId).endTime - block.timestamp;
     }
 
     function placeBid(uint256 auctionId) public payable returns (bool) {
-        // NOTE: confirm that this passes on the sender and value
-        return getAuction(auctionId).bid();
+        return _getAuction(auctionId).bid();
     }
 
     function withdrawBid(uint256 auctionId) public returns (bool) {
-        // NOTE: confirm that this passes on the sender and value
-        return getAuction(auctionId).withdraw();
+        return _getAuction(auctionId).withdraw();
     }
 
-    function setAuctionDefaults(
-        uint256 duration,
-        uint256 startingValue,
-        uint256 minimumBidValue
-    ) internal onlyOwner {
-        auctionDefaults.duration = duration;
-        auctionDefaults.startingValue = startingValue;
-        auctionDefaults.minimumBidValue = minimumBidValue;
+    function setAuctionDefaults(AuctionSettings calldata newDefaults)
+        public
+        onlyOwner
+    {
+        auctionDefaults = newDefaults;
+
+        emit AuctionDefaultsUpdated(newDefaults);
     }
 
-    function startCustomAuction(
+    function _startAuction(
         uint256 tokenId,
-        uint256 auctionDuration,
-        uint256 startingValue,
-        uint256 minimumBidValue
+        AuctionSettings memory auctionSettings
     ) internal onlyOwner returns (uint256) {
         uint256 newAuctionId = _generateAuctionId();
         Auction storage newAuction = auctions[newAuctionId];
@@ -64,43 +60,35 @@ abstract contract Auctionable is Ownable {
         newAuction.start(
             newAuctionId,
             tokenId,
-            auctionDuration,
-            startingValue,
-            minimumBidValue
+            auctionSettings.duration,
+            auctionSettings.startingValue,
+            auctionSettings.minimumBidValue
         );
 
         return newAuctionId;
     }
 
-    function startDefaultAuction(uint256 tokenId)
+    function _startAuction(uint256 tokenId)
         internal
         onlyOwner
         returns (uint256)
     {
-        return
-            startCustomAuction(
-                tokenId, // token for auction
-                auctionDefaults.duration,
-                auctionDefaults.startingValue,
-                auctionDefaults.minimumBidValue
-            );
+        return _startAuction(tokenId, auctionDefaults);
     }
 
-    function endAuction(uint256 auctionId) internal onlyOwner returns (bool) {
-        // NOTE: confirm that this passes on the sender and value
-        return getAuction(auctionId).end();
+    function _endAuction(uint256 auctionId) internal onlyOwner returns (bool) {
+        return _getAuction(auctionId).end();
     }
 
-    function cancelAuction(uint256 auctionId)
+    function _cancelAuction(uint256 auctionId)
         internal
         onlyOwner
         returns (bool)
     {
-        // NOTE: confirm that this passes on the sender and value
-        return getAuction(auctionId).cancel();
+        return _getAuction(auctionId).cancel();
     }
 
-    function getAuction(uint256 auctionId)
+    function _getAuction(uint256 auctionId)
         internal
         view
         returns (Auction storage)

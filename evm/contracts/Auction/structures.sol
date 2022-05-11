@@ -21,7 +21,7 @@ struct Auction {
     mapping(address => uint256) bids;
 }
 
-struct AuctionDefaults {
+struct AuctionSettings {
     uint256 duration;
     uint256 startingValue;
     uint256 minimumBidValue;
