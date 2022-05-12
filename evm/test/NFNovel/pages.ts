@@ -29,6 +29,7 @@ describe("NFNovel: Page Interactions", () => {
     });
 
     context("successful call", () => {
+      it("returns the page number of the new page");
       it("assigns a sequential page number to the page");
       it("assigns token IDs to each panel of the page");
       it("does not mint (assign to an owner) any panels of the page");
