@@ -26,15 +26,14 @@ const deployTestContract = async <TContract extends Contract>(
 
 export const deployNFNovelTestContract = (
   ownerAccount: Signer,
-  ...constructorArgs: unknown[]
+  title: string,
+  symbol: string
 ): Promise<NFNovel> =>
-  deployTestContract<NFNovel>("NFNovel", ownerAccount, ...constructorArgs);
+  deployTestContract<NFNovel>("NFNovel", ownerAccount, title, symbol);
 
 export const deployNFNovelsTestContract = (
-  ownerAccount: Signer,
-  ...constructorArgs: unknown[]
-): Promise<NFNovels> =>
-  deployTestContract<NFNovels>("NFNovels", ownerAccount, ...constructorArgs);
+  ownerAccount: Signer
+): Promise<NFNovels> => deployTestContract<NFNovels>("NFNovels", ownerAccount);
 
 /**
  * Destructure as many accounts as needed for tests
