@@ -5,7 +5,9 @@
   "main": "index.js",
   "scripts": {
     "node": "hardhat node",
+    "pretest": "npm run build",
     "test": "hardhat test",
+    "clean": "hardhat clean",
     "build": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.ts --network"
   },
