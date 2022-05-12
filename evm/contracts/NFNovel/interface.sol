@@ -10,6 +10,7 @@ interface OpenSeaCompatible {
 
 interface INFNovel is OpenSeaCompatible {
     error PageNotFound();
+    error InvalidPanelsCount();
     error PageAlreadyRevealed();
     error PanelNotSold(uint256 panelTokenId);
     error PanelAuctionNotEnded(uint256 panelAuctionId);

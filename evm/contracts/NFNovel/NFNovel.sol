@@ -62,6 +62,8 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
         onlyOwner
         returns (uint256 pageNumber)
     {
+        if (panelsCount == 0) revert InvalidPanelsCount();
+
         pageNumber = _generatePageNumber();
 
         pages[pageNumber] = Page(
