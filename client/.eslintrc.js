@@ -14,6 +14,8 @@ module.exports = {
     "coverage",
     ".eslintrc.js",
     "next.config.js",
+    "tailwind.config.js",
+    "poscss.config.js"
   ],
   plugins: [
     "import",
