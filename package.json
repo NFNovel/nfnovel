@@ -5,18 +5,22 @@
   "scripts": {
     "install": "npm run client -- install && npm run evm -- install",
     "build": "npm run evm:build && npm run client:build",
-    "predev": "npm run evm:deploy",
-    "dev": "npm run evm:build && npm run client:dev",
+    "dev": "concurrently \"npm run evm:node\" \"npm run evm:deploy -- --network localhost && npm run client:dev\"",
     "client": "npm --prefix ./client",
     "client:": "npm run client -- run",
     "client:build": "npm run client: -- build",
     "client:dev": "npm run client: -- dev",
     "evm": "npm --prefix ./evm",
     "evm:": "npm run evm -- run",
+    "evm:node": "npm run evm: -- node",
     "evm:build": "npm run evm: -- build",
+    "preevm:deploy": "npm run evm:build",
     "evm:deploy": "npm run evm: -- deploy"
   },
   "keywords": [],
   "author": "the-vampiire",
-  "license": "UNLICENSED"
+  "license": "UNLICENSED",
+  "devDependencies": {
+    "concurrently": "^7.1.0"
+  }
 }
