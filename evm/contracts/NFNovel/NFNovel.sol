@@ -17,11 +17,11 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
 
     Counters.Counter private _pageNumbers;
     Counters.Counter private _panelTokenIds;
-
     // mapping(pageNumber => Page)
-    mapping(uint256 => Page) public pages;
+    mapping(uint256 => Page) private pages; // page(pageNumber)
+
     // mapping(panelTokenId => pageNumber)
-    mapping(uint256 => uint256) public panelPages;
+    mapping(uint256 => uint256) public panelPageNumbers;
     // mapping(panelTokenId => panelAuctionId)
     mapping(uint256 => uint256) public panelAuctions;
 
@@ -40,6 +40,34 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
             interfaceId == type(Ownable).interfaceId ||
             interfaceId == type(Auctionable).interfaceId ||
             super.supportsInterface(interfaceId);
+    }
+
+    function getPage(uint256 pageNumber)
+        public
+        view
+        returns (Page memory page)
+    {
+        page = pages[pageNumber];
+        if (page.pageNumber == 0) revert PageNotFound();
+    }
+
+    function isPageSold(uint256 pageNumber)
+        public
+        view
+        override
+        returns (bool)
+    {
+        uint256[] memory panelTokenIds = pages[pageNumber].panelTokenIds;
+
+        for (
+            uint256 panelIndex = 0;
+            panelIndex < panelTokenIds.length;
+            panelIndex++
+        ) {
+            if (!_exists(panelTokenIds[panelIndex])) return false;
+        }
+
+        return true;
     }
 
     function mintPanel(uint256 panelTokenId) public override returns (bool) {
@@ -76,7 +104,7 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
         for (uint256 panelIndex = 0; panelIndex < panelsCount; panelIndex++) {
             uint256 panelTokenId = _generatePanelTokenId();
 
-            panelPages[panelTokenId] = pageNumber;
+            panelPageNumbers[panelTokenId] = pageNumber;
             pages[pageNumber].panelTokenIds[panelIndex] = panelTokenId;
             panelAuctions[panelTokenId] = _startAuction(panelTokenId);
         }
@@ -118,25 +146,6 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
         emit PageRevealed(pageNumber, page.panelTokenIds);
     }
 
-    function isPageSold(uint256 pageNumber)
-        public
-        view
-        override
-        returns (bool)
-    {
-        uint256[] memory panelTokenIds = pages[pageNumber].panelTokenIds;
-
-        for (
-            uint256 panelIndex = 0;
-            panelIndex < panelTokenIds.length;
-            panelIndex++
-        ) {
-            if (!_exists(panelTokenIds[panelIndex])) return false;
-        }
-
-        return true;
-    }
-
     function tokenURI(uint256 panelTokenId)
         public
         view
@@ -168,7 +177,7 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
 
     function _getPage(uint256 pageNumber) private view returns (Page storage) {
         Page storage page = pages[pageNumber];
-        if (page.panelTokenIds.length == 0) revert PageNotFound();
+        if (page.pageNumber == 0) revert PageNotFound();
 
         return page;
     }
@@ -178,6 +187,6 @@ contract NFNovel is ERC721, INFNovel, Auctionable {
         view
         returns (Page storage)
     {
-        return _getPage(panelPages[panelTokenId]);
+        return _getPage(panelPageNumbers[panelTokenId]);
     }
 }
