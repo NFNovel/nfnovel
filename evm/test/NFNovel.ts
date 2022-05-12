@@ -1,8 +1,18 @@
-import { getTestSigningAccounts, deployNFNovelTestContract } from "../utils";
+import {
+  computeInterfaceId,
+  getTestSigningAccounts,
+  deployNFNovelTestContract,
+} from "./utils";
 import type { Signer } from "ethers";
-import type { NFNovel } from "../../typechain/NFNovel";
+import type { NFNovel } from "../typechain/NFNovel";
+import { expect } from "chai";
+import { OZ_INTERFACE_IDS } from "./constants";
+// eslint-disable-next-line camelcase
+import { Ownable__factory } from "../typechain/factories/Ownable__factory";
+// eslint-disable-next-line camelcase
+import { Auctionable__factory } from "../typechain/factories/Auctionable__factory";
 
-describe("NFNovel: Page Interactions", () => {
+describe("NFNovel", () => {
   let owner: Signer;
   let ownerAddress: string;
   let nonOwner: Signer;
@@ -11,6 +21,43 @@ describe("NFNovel: Page Interactions", () => {
   before(async () => {
     [[owner, ownerAddress], [nonOwner, nonOwnerAddress]] =
       await getTestSigningAccounts();
+  });
+
+  describe("interface implementation", () => {
+    let nfnovelContract: NFNovel;
+    before(async () => {
+      nfnovelContract = await deployNFNovelTestContract(
+        owner,
+        "Novel",
+        "NFN-1"
+      );
+    });
+
+    it("is ERC-721", async () =>
+      expect(await nfnovelContract.supportsInterface(OZ_INTERFACE_IDS.ERC721))
+        .to.be.true);
+
+    it("is Ownable", async () => {
+      const ownableInterface = Ownable__factory.createInterface();
+      const ownableInterfaceId = computeInterfaceId(ownableInterface);
+
+      expect(await nfnovelContract.supportsInterface(ownableInterfaceId)).to.be
+        .true;
+    });
+
+    it("is Auctionable", async () => {
+      const ownableInterface = Ownable__factory.createInterface();
+      const auctionableInterface = Auctionable__factory.createInterface();
+
+      // Auctionable is Ownable, must compute with both
+      const auctionableInterfaceId = computeInterfaceId(
+        auctionableInterface,
+        ownableInterface
+      );
+
+      expect(await nfnovelContract.supportsInterface(auctionableInterfaceId)).to
+        .be.true;
+    });
   });
 
   describe("addPage", () => {
