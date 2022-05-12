@@ -12,7 +12,7 @@ import "../Auction/Auctionable.sol";
 import "./interface.sol";
 import "./structures.sol";
 
-contract NFNovel is ERC721, INFNovel, Auctionable {
+contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
     using Counters for Counters.Counter;
 
     Counters.Counter private _pageNumbers;

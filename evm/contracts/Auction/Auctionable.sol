@@ -7,7 +7,7 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "./structures.sol";
 import "./AuctionManagement.sol";
 
-abstract contract Auctionable is Ownable {
+abstract contract Auctionable {
     using Counters for Counters.Counter;
     using AuctionManagement for Auction;
 
@@ -41,10 +41,7 @@ abstract contract Auctionable is Ownable {
         return _getAuction(auctionId).withdraw();
     }
 
-    function setAuctionDefaults(AuctionSettings calldata newDefaults)
-        public
-        onlyOwner
-    {
+    function setAuctionDefaults(AuctionSettings calldata newDefaults) public {
         auctionDefaults = newDefaults;
 
         emit AuctionDefaultsUpdated(newDefaults);
@@ -53,7 +50,7 @@ abstract contract Auctionable is Ownable {
     function _startAuction(
         uint256 tokenId,
         AuctionSettings memory auctionSettings
-    ) internal onlyOwner returns (uint256) {
+    ) internal returns (uint256) {
         uint256 newAuctionId = _generateAuctionId();
         Auction storage newAuction = auctions[newAuctionId];
 
@@ -68,23 +65,15 @@ abstract contract Auctionable is Ownable {
         return newAuctionId;
     }
 
-    function _startAuction(uint256 tokenId)
-        internal
-        onlyOwner
-        returns (uint256)
-    {
+    function _startAuction(uint256 tokenId) internal returns (uint256) {
         return _startAuction(tokenId, auctionDefaults);
     }
 
-    function _endAuction(uint256 auctionId) internal onlyOwner returns (bool) {
+    function _endAuction(uint256 auctionId) internal returns (bool) {
         return _getAuction(auctionId).end();
     }
 
-    function _cancelAuction(uint256 auctionId)
-        internal
-        onlyOwner
-        returns (bool)
-    {
+    function _cancelAuction(uint256 auctionId) internal returns (bool) {
         return _getAuction(auctionId).cancel();
     }
 
