@@ -30,15 +30,15 @@ const recordDeployment: (
     deployedAt: new Date().toISOString(),
     contractAddress: deployedContract.address,
     network: {
-      chainId: network.chainId || "hardhat-ephemeral-node",
-      name: network.name === "unknown" ? "hardhat" : network.name,
+      chainId: network.chainId || "localhost",
+      name: network.name === "unknown" ? "localhost" : network.name,
     },
   };
 
   const dirPath = resolve(__dirname, `../deployments`);
 
   await stat(dirPath).catch(async () => {
-    console.log("Creating deployments dir");
+    console.log("Creating deployments dir at: ", dirPath);
     await mkdir(dirPath);
   });
 
