@@ -1,7 +1,9 @@
+import { expect } from "chai";
 import { ethers } from "hardhat";
-
 import { Signer, Contract, BigNumber, utils } from "ethers";
+
 import type { NFNovel, NFNovels } from "../typechain";
+import type { Block } from "@ethersproject/providers";
 
 /**
  * Deploys a contract and returns an instance of it for tests
@@ -91,4 +93,78 @@ export const computeInterfaceId = (
       return interfaceId.xor(contractInterface.getSighash(contractFunction));
     }, BigNumber.from(0))
     .toHexString();
+};
+
+export const getCurrentBlock = async (): Promise<Block> => {
+  const currentBlockNumber = await ethers.provider.getBlockNumber();
+  const currentBlock = await ethers.provider.getBlock(currentBlockNumber);
+
+  return currentBlock;
+};
+
+/**
+ * Simulates the passage of time by mining the next block with a number of seconds added to the current block timestamp
+ * @param secondsToAdd the number of seconds to add to block.timestamp
+ */
+export const addBlockTime = async (
+  secondsToAdd: number | BigNumber
+): Promise<void> => {
+  const currentBlock = await getCurrentBlock();
+
+  const currentTimestamp = currentBlock.timestamp;
+  const nextBlockTimestamp = BigNumber.isBigNumber(secondsToAdd)
+    ? secondsToAdd.add(currentTimestamp).toNumber()
+    : currentTimestamp + secondsToAdd;
+
+  // https://ethereum.stackexchange.com/a/112809
+  // https://github.com/trufflesuite/ganache-cli-archive/commit/6c0d5820bc3634fa00cbeb2bd97ad721066761a5
+  // (as noted in thread) this is a ganache setting but hardhat implements it too
+  await ethers.provider.send("evm_mine", [nextBlockTimestamp]);
+};
+
+/**
+ * Bids on behalf of the winner account and ends the auction using @see addBlockTime
+ * @param nfnovelContract
+ * @param settings
+ */
+export const setPanelAuctionWinner = async (
+  nfnovelContract: NFNovel,
+  settings: {
+    winner: Signer;
+    panelTokenId: number | BigNumber;
+    panelAuctionId?: number | BigNumber;
+    bidAmount?: number | BigNumber;
+    auctionDurationSeconds?: number | BigNumber;
+  }
+): Promise<{ bid: number | BigNumber; winner: Signer }> => {
+  const {
+    winner,
+    bidAmount,
+    panelTokenId,
+    panelAuctionId,
+    auctionDurationSeconds,
+  } = settings;
+
+  const auctionDuration =
+    auctionDurationSeconds ||
+    (await nfnovelContract.auctionDefaults()).duration;
+
+  const auctionId =
+    panelAuctionId || (await nfnovelContract.getPanelAuctionId(panelTokenId));
+
+  const bid = bidAmount || ethers.constants.WeiPerEther.mul(1);
+
+  const panelAuction = await nfnovelContract.auctions(auctionId);
+  expect(panelAuction.highestBid).to.be.lt(bid);
+
+  await nfnovelContract.connect(winner).placeBid(auctionId, { value: bid });
+
+  await addBlockTime(auctionDuration);
+
+  await nfnovelContract.endPanelAuction(panelTokenId);
+
+  return {
+    bid,
+    winner,
+  };
 };
