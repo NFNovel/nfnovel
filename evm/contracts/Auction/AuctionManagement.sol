@@ -28,7 +28,7 @@ library AuctionManagement {
     error BidBelowMinimumIncrement();
 
     error NoBidToWithdraw();
-    error WinnerCannotWithdraw();
+    error CannotWithdrawHighestBid();
 
     function start(
         Auction storage auction,
@@ -152,6 +152,6 @@ library AuctionManagement {
         uint256 withdrawalValue
     ) private view {
         if (withdrawalValue == 0) revert NoBidToWithdraw();
-        if (auction.highestBidder == bidder) revert WinnerCannotWithdraw();
+        if (auction.highestBidder == bidder) revert CannotWithdrawHighestBid();
     }
 }

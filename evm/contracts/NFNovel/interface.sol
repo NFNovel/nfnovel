@@ -45,8 +45,10 @@ interface INFNovel is OpenSeaCompatible {
         external
         returns (uint256 pageNumber);
 
-    function revealPage(uint256 pageNumber, string calldata revealedBaseURI)
-        external;
+    function endPanelAuction(uint256 panelTokenId) external returns (bool);
 
     function mintPanel(uint256 panelTokenId) external returns (bool);
+
+    function revealPage(uint256 pageNumber, string calldata revealedBaseURI)
+        external;
 }

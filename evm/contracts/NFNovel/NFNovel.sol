@@ -12,6 +12,7 @@ import "../Auction/Auctionable.sol";
 import "./interface.sol";
 import "./structures.sol";
 
+// BUG: no way to withdraw funds!
 contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
     using Counters for Counters.Counter;
 
@@ -91,6 +92,26 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
         return true;
     }
 
+    function tokenURI(uint256 panelTokenId)
+        public
+        view
+        override
+        returns (string memory)
+    {
+        Page storage page = _getPanelPage(panelTokenId);
+
+        return _buildTokenURI(page.baseURI, panelTokenId);
+    }
+
+    function endPanelAuction(uint256 panelTokenId)
+        public
+        override
+        onlyOwner
+        returns (bool)
+    {
+        return _endAuction(getPanelAuctionId(panelTokenId));
+    }
+
     function mintPanel(uint256 panelTokenId) public override returns (bool) {
         Auction storage panelAuction = _getAuction(
             getPanelAuctionId(panelTokenId)
@@ -129,6 +150,7 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
 
             panelPageNumbers[panelTokenId] = pageNumber;
             pages[pageNumber].panelTokenIds[panelIndex] = panelTokenId;
+            // THINK: what happens if an auction ends without a winner? way to restart or set buy-it-now price?
             panelAuctionIds[panelTokenId] = _startAuction(panelTokenId);
         }
 
@@ -167,17 +189,6 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
         page.baseURI = revealedBaseURI;
 
         emit PageRevealed(pageNumber, page.panelTokenIds);
-    }
-
-    function tokenURI(uint256 panelTokenId)
-        public
-        view
-        override
-        returns (string memory)
-    {
-        Page storage page = _getPanelPage(panelTokenId);
-
-        return _buildTokenURI(page.baseURI, panelTokenId);
     }
 
     function _generatePanelTokenId() private returns (uint256 panelTokenId) {
