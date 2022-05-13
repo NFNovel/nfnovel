@@ -3,6 +3,7 @@ import {
   computeInterfaceId,
   getTestSigningAccounts,
   deployNFNovelTestContract,
+  setPanelAuctionWinner,
 } from "./utils";
 import type { Signer } from "ethers";
 import type { NFNovel } from "../typechain/NFNovel";
@@ -211,13 +212,13 @@ describe("NFNovel", () => {
       it("with NotPanelAuctionWinner(panelAuctionId) if the caller is not the winner of the auction", async () => {
         const auctionDurationSeconds = 100;
 
-        await nfnovelContract.addPage(1, "secondPage");
-
         await nfnovelContract.setAuctionDefaults({
           duration: auctionDurationSeconds,
           minimumBidValue: 0,
           startingValue: 0,
         });
+
+        await nfnovelContract.addPage(1, "secondPage");
 
         await nfnovelContract.connect(bidder).placeBid(2, {
           value: ethers.constants.WeiPerEther.mul(1),
@@ -228,16 +229,35 @@ describe("NFNovel", () => {
         // sanity check
         expect(bidderAddress).not.to.hexEqual(nonOwnerAddress);
 
-        expect(
+        await nfnovelContract.endPanelAuction(2);
+
+        await expect(
           nfnovelContract.connect(nonOwner).mintPanel(2)
         ).to.be.revertedWith("NotPanelAuctionWinner(2)");
       });
     });
 
     context("successful call", () => {
-      it(
-        "mints the panel associating it with the auction winner (caller) address"
-      );
+      let nfnovelContract: NFNovel;
+      before(async () => {
+        nfnovelContract = await deployNFNovelTestContract(
+          owner,
+          "Mysterio",
+          "NFN-1"
+        );
+      });
+      it("mints the panel associating it with the auction winner (caller) address", async () => {
+        await nfnovelContract.addPage(1, "secondPage");
+
+        await setPanelAuctionWinner(nfnovelContract, {
+          winner: bidder,
+          panelTokenId: 1,
+        });
+
+        await nfnovelContract.connect(bidder).mintPanel(1);
+
+        expect(await nfnovelContract.ownerOf(1)).to.hexEqual(bidderAddress);
+      });
     });
   });
 
