@@ -1,4 +1,5 @@
 import {
+  addBlockTime,
   computeInterfaceId,
   getTestSigningAccounts,
   deployNFNovelTestContract,
@@ -12,16 +13,22 @@ import { Ownable__factory } from "../typechain/factories/Ownable__factory";
 // eslint-disable-next-line camelcase
 import { Auctionable__factory } from "../typechain/factories/Auctionable__factory";
 import { BigNumber } from "ethers";
+import { ethers } from "hardhat";
 
 describe("NFNovel", () => {
   let owner: Signer;
   let ownerAddress: string;
   let nonOwner: Signer;
   let nonOwnerAddress: string;
+  let bidder: Signer;
+  let bidderAddress: string;
 
   before(async () => {
-    [[owner, ownerAddress], [nonOwner, nonOwnerAddress]] =
-      await getTestSigningAccounts();
+    [
+      [owner, ownerAddress],
+      [nonOwner, nonOwnerAddress],
+      [bidder, bidderAddress],
+    ] = await getTestSigningAccounts();
   });
 
   describe("interface implementation", () => {
@@ -72,8 +79,10 @@ describe("NFNovel", () => {
         expect(nfnovelContract.connect(nonOwner).addPage(1, "")).to.be
           .reverted);
 
-      it("if called with 0 panels", () =>
-        expect(nfnovelContract.addPage(0, "")).to.be.reverted);
+      it("with InvalidPanelsCount if called with 0 panels", () =>
+        expect(nfnovelContract.addPage(0, "")).to.be.revertedWith(
+          "InvalidPanelsCount"
+        ));
     });
 
     context("successful call", () => {
@@ -177,17 +186,52 @@ describe("NFNovel", () => {
 
   describe("mintPanel", () => {
     context("reverts", () => {
-      it(
-        "with PageNotFound(pageNumber) if a non-existent panel token ID is used"
-      );
+      let nfnovelContract: NFNovel;
+      before(async () => {
+        nfnovelContract = await deployNFNovelTestContract(
+          owner,
+          "Mysterio",
+          "NFN-1"
+        );
+      });
 
-      it(
-        "with PanelAuctionNotEnded(panelAuctionId) if the auction has not ended"
-      );
+      it("with InvalidPanelTokenId if a non-existent panel token ID is used", async () =>
+        await expect(nfnovelContract.mintPanel(1)).to.be.revertedWith(
+          "InvalidPanelTokenId"
+        ));
 
-      it(
-        "with NotPanelAuctionWinner(panelAuctionId) if the caller is not the winner of the auction"
-      );
+      it("with PanelAuctionNotEnded(panelAuctionId) if the auction has not ended", async () => {
+        await nfnovelContract.addPage(1, "firstPage");
+        await expect(nfnovelContract.mintPanel(1)).to.be.revertedWith(
+          "PanelAuctionNotEnded(1)"
+        );
+      });
+
+      // NOTE: coupled to previous test (expects to be second page, second panel, second auction)
+      it("with NotPanelAuctionWinner(panelAuctionId) if the caller is not the winner of the auction", async () => {
+        const auctionDurationSeconds = 100;
+
+        await nfnovelContract.addPage(1, "secondPage");
+
+        await nfnovelContract.setAuctionDefaults({
+          duration: auctionDurationSeconds,
+          minimumBidValue: 0,
+          startingValue: 0,
+        });
+
+        await nfnovelContract.connect(bidder).placeBid(2, {
+          value: ethers.constants.WeiPerEther.mul(1),
+        });
+
+        await addBlockTime(auctionDurationSeconds);
+
+        // sanity check
+        expect(bidderAddress).not.to.hexEqual(nonOwnerAddress);
+
+        expect(
+          nfnovelContract.connect(nonOwner).mintPanel(2)
+        ).to.be.revertedWith("NotPanelAuctionWinner(2)");
+      });
     });
 
     context("successful call", () => {
