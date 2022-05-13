@@ -4,7 +4,8 @@
   "description": "NFNovel MVP project",
   "scripts": {
     "install": "npm run client -- install && npm run evm -- install",
-    "test": "npm run evm:test && npm run client:test",
+    "audit": "npm run client -- audit --production && npm run evm -- audit --production",
+    "test": "npm run evm:test && npm run client:test && npm run audit",
     "build": "npm run evm:build && npm run client:build",
     "dev": "concurrently \"npm run evm:node\" \"npm run evm:deploy -- --network localhost && npm run client:dev\"",
     "client": "npm --prefix ./client",
