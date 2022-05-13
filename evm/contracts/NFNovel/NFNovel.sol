@@ -17,13 +17,13 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
 
     Counters.Counter private _pageNumbers;
     Counters.Counter private _panelTokenIds;
+
     // mapping(pageNumber => Page)
     mapping(uint256 => Page) private pages; // page(pageNumber)
-
     // mapping(panelTokenId => pageNumber)
-    mapping(uint256 => uint256) public panelPageNumbers;
+    mapping(uint256 => uint256) private panelPageNumbers;
     // mapping(panelTokenId => panelAuctionId)
-    mapping(uint256 => uint256) public panelAuctions;
+    mapping(uint256 => uint256) private panelAuctionIds;
 
     constructor(string memory novelTitle, string memory novelSymbol)
         ERC721(novelTitle, novelSymbol)
@@ -45,10 +45,31 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
     function getPage(uint256 pageNumber)
         public
         view
+        override
         returns (Page memory page)
     {
         page = pages[pageNumber];
         if (page.pageNumber == 0) revert PageNotFound();
+    }
+
+    function getPanelPageNumber(uint256 panelTokenId)
+        public
+        view
+        override
+        returns (uint256 pageNumber)
+    {
+        pageNumber = panelPageNumbers[panelTokenId];
+        if (pageNumber == 0) revert InvalidPanelTokenId();
+    }
+
+    function getPanelAuctionId(uint256 panelTokenId)
+        public
+        view
+        override
+        returns (uint256 panelAuctionId)
+    {
+        panelAuctionId = panelAuctionIds[panelTokenId];
+        if (panelAuctionId == 0) revert InvalidPanelTokenId();
     }
 
     function isPageSold(uint256 pageNumber)
@@ -57,7 +78,7 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
         override
         returns (bool)
     {
-        uint256[] memory panelTokenIds = pages[pageNumber].panelTokenIds;
+        uint256[] memory panelTokenIds = getPage(pageNumber).panelTokenIds;
 
         for (
             uint256 panelIndex = 0;
@@ -71,7 +92,9 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
     }
 
     function mintPanel(uint256 panelTokenId) public override returns (bool) {
-        Auction storage panelAuction = _getAuction(panelAuctions[panelTokenId]);
+        Auction storage panelAuction = _getAuction(
+            getPanelAuctionId(panelTokenId)
+        );
 
         if (panelAuction.state != AuctionStates.Ended)
             revert PanelAuctionNotEnded(panelAuction.id);
@@ -106,7 +129,7 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
 
             panelPageNumbers[panelTokenId] = pageNumber;
             pages[pageNumber].panelTokenIds[panelIndex] = panelTokenId;
-            panelAuctions[panelTokenId] = _startAuction(panelTokenId);
+            panelAuctionIds[panelTokenId] = _startAuction(panelTokenId);
         }
 
         emit PageAdded(pageNumber, pages[pageNumber].panelTokenIds);
@@ -187,6 +210,6 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
         view
         returns (Page storage)
     {
-        return _getPage(panelPageNumbers[panelTokenId]);
+        return _getPage(getPanelPageNumber(panelTokenId));
     }
 }
