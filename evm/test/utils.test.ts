@@ -1,6 +1,7 @@
 import { expect } from "chai";
 
 import {
+  mintPagePanel,
   addBlockTime,
   getCurrentBlock,
   getTestSigningAccounts,
@@ -64,5 +65,24 @@ describe("Test utils", () => {
       expect(output).to.haveOwnProperty("bid");
       expect(output).to.haveOwnProperty("winner");
     });
+  });
+
+  describe("mintPagePanel", () => {
+    let nfnovelContract: NFNovel;
+    let owner: Signer, panelOwner: Signer;
+    let panelOwnerAddress: string;
+
+    before(async () => {
+      [[owner], [panelOwner, panelOwnerAddress]] =
+        await getTestSigningAccounts();
+      nfnovelContract = await deployNFNovelTestContract(owner, "Title", "SYM");
+
+      await nfnovelContract.addPage(1, "obscured");
+
+      await mintPagePanel(nfnovelContract, panelOwner, 1);
+    });
+
+    it("mints the panel to the panelOwner account", async () =>
+      expect(await nfnovelContract.ownerOf(1)).to.hexEqual(panelOwnerAddress));
   });
 });

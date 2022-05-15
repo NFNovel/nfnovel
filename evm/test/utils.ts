@@ -168,3 +168,21 @@ export const setPanelAuctionWinner = async (
     winner,
   };
 };
+
+/**
+ * Ends the panel auction with the panelOwner as the winner (using @see setPanelAuctionWinner) and mints the panel to them
+ */
+export const mintPagePanel = async (
+  nfnovelContract: NFNovel,
+  panelOwner: Signer,
+  panelTokenId: number | BigNumber
+): Promise<void> => {
+  // end panel auction
+  await setPanelAuctionWinner(nfnovelContract, {
+    panelTokenId,
+    winner: panelOwner,
+  });
+
+  // mint the panel so reveal page will succeed
+  await nfnovelContract.connect(panelOwner).mintPanel(panelTokenId);
+};
