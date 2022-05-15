@@ -264,19 +264,58 @@ describe("NFNovel", () => {
   describe("revealPage", () => {
     context("reverts", () => {
       let nfnovelContract: NFNovel;
+
+      const pageNumber = 1;
+      const panelsCount = 1;
+      const panelTokenId = 1;
+      const obscuredBaseURI = "ipfs://obscured";
+      const revealedBaseURI = "ipfs://revealed";
+
       before(async () => {
         nfnovelContract = await deployNFNovelTestContract(
           owner,
           "Mysterio",
           "NFN-1"
         );
+
+        await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
       });
 
-      it("with PageNotFound if the page is not found");
-      it("with PageAlreadyRevealed if the page has already been revealed");
-      it(
-        "with PanelNotSold(panelTokenId) if a panel of the page has not been sold"
-      );
+      it("with PageNotFound if the page is not found", () =>
+        expect(
+          nfnovelContract.revealPage(pageNumber + 1, revealedBaseURI)
+        ).to.be.revertedWith("PageNotFound"));
+
+      it("if called by a non-owner", () =>
+        expect(
+          nfnovelContract
+            .connect(nonOwner)
+            .revealPage(pageNumber, revealedBaseURI)
+        ).to.be.reverted);
+
+      it("with PanelNotSold(panelTokenId) if a panel of the page has not been sold", () =>
+        expect(
+          nfnovelContract.revealPage(pageNumber, revealedBaseURI)
+        ).to.be.revertedWith(`PanelNotSold(${panelTokenId})`));
+
+      it("with PageAlreadyRevealed if the page has already been revealed to ensure the base URI can only be changed once", async () => {
+        // end panel auction
+        await setPanelAuctionWinner(nfnovelContract, {
+          panelTokenId,
+          winner: bidder,
+        });
+
+        // mint the panel so reveal page will succeed
+        await nfnovelContract.connect(bidder).mintPanel(panelTokenId);
+
+        // reveal page to set isRevealed = true
+        await nfnovelContract.revealPage(pageNumber, revealedBaseURI);
+
+        // attempt to reveal the same page again and expect to be reverted
+        return expect(
+          nfnovelContract.revealPage(pageNumber, revealedBaseURI)
+        ).to.be.revertedWith("PageAlreadyRevealed");
+      });
     });
 
     context("successful call", () => {
