@@ -2,8 +2,10 @@
 pragma solidity ^0.8.0;
 
 import "hardhat/console.sol";
-import "@openzeppelin/contracts/access/Ownable.sol";
+
+import "@openzeppelin/contracts/utils/Strings.sol";
 import "@openzeppelin/contracts/utils/Counters.sol";
+import "@openzeppelin/contracts/access/Ownable.sol";
 import "@openzeppelin/contracts/token/ERC721/ERC721.sol";
 
 import "../Auction/structures.sol";
@@ -14,6 +16,7 @@ import "./structures.sol";
 
 // BUG: no way to withdraw funds!
 contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
+    using Strings for uint256;
     using Counters for Counters.Counter;
 
     Counters.Counter private _pageNumbers;
@@ -206,7 +209,8 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
         pure
         returns (string memory)
     {
-        return string(abi.encodePacked(pageBaseURI, panelTokenId));
+        return
+            string(abi.encodePacked(pageBaseURI, "/", panelTokenId.toString()));
     }
 
     function _getPage(uint256 pageNumber) private view returns (Page storage) {
