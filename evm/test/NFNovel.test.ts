@@ -383,30 +383,65 @@ describe("NFNovel", () => {
   });
 
   describe("view functions", () => {
-    it("pages(pageNumber): returns the Page");
+    let nfnovelContract: NFNovel;
 
-    it("panelPages(panelTokenId): returns the page number of the panel");
+    const pageNumber = 1;
+    const panelsCount = 2;
+    const panelTokenIds = [1, 2];
+    const obscuredBaseURI = "ipfs://obscured";
 
-    it("panelAuctions(panelTokenId): returns the auction ID");
+    before(async () => {
+      nfnovelContract = await deployNFNovelTestContract(
+        owner,
+        "Mysterio",
+        "NFN-1"
+      );
 
-    it("tokenURI(panelTokenId): returns {Page.baseURI}/{panelTokenId}");
+      await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
+    });
+
+    it("getPage(pageNumber): returns the Page", async () => {
+      const page = await nfnovelContract.getPage(pageNumber);
+      expect(page.pageNumber).to.eq(pageNumber);
+      expect(page.isRevealed).to.be.false;
+      expect(page.baseURI).to.eq(obscuredBaseURI);
+      expect(page.panelTokenIds).to.deep.eq(panelTokenIds.map(BigNumber.from));
+    });
+
+    it("getPanelPageNumber(panelTokenId): returns the page number of the panel", async () => {
+      for (const panelTokenId of panelTokenIds) {
+        expect(await nfnovelContract.getPanelPageNumber(panelTokenId)).to.eq(
+          pageNumber
+        );
+      }
+    });
+
+    it("getPanelAuctionId(panelTokenId): returns the auction ID", async () => {
+      for (const panelTokenId of panelTokenIds) {
+        // panelTokenId and panelAuctionId are sequential, should be equal
+        expect(await nfnovelContract.getPanelAuctionId(panelTokenId)).to.eq(
+          panelTokenId
+        );
+      }
+    });
+
+    it("tokenURI(panelTokenId): returns {Page.baseURI}/{panelTokenId}", async () => {
+      for (const panelTokenId of panelTokenIds) {
+        const expectedTokenURI = `${obscuredBaseURI}/${panelTokenId}`;
+        expect(await nfnovelContract.tokenURI(panelTokenId)).to.eq(
+          expectedTokenURI
+        );
+      }
+    });
 
     context("isPageSold", () => {
-      it("returns true if all panels of the page have been sold");
-      it("returns false if any panel of the page has not been sold");
-    });
-  });
+      it("returns false if any panel of the page has not been sold", async () =>
+        expect(await nfnovelContract.isPageSold(pageNumber)).to.be.false);
 
-  describe("Panel auctions", () => {
-    // TODO: auction functions (bidding)
-    // THINK: separate to Auctionable test suite (how to put it on a dummy contract to isolate its behavior?)
-
-    context("view functions", () => {
-      it("auctions(panelAuctionId): returns the Auction of the panel token");
-      it("auctionDefaults: returns the default Auction settings");
-      it(
-        "auctionTimeRemaining(panelAuctionId): returns the unix seconds remaining in the panel auction"
-      );
+      it("returns true if all panels of the page have been sold", async () => {
+        await mintMultiplePagePanels(nfnovelContract, bidder, panelTokenIds);
+        expect(await nfnovelContract.isPageSold(pageNumber)).to.be.true;
+      });
     });
   });
 });
