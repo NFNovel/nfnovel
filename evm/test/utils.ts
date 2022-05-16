@@ -122,6 +122,51 @@ export const addBlockTime = async (
   await ethers.provider.send("evm_mine", [nextBlockTimestamp]);
 };
 
+export const setPanelAuctionHighestBidder = async (
+  nfnovelContract: NFNovel,
+  highestBidder: Signer,
+  panelTokenId: number | BigNumber
+): Promise<{
+  bid: number | BigNumber;
+  panelAuctionId: number | BigNumber;
+  highestBidder: Signer;
+}> => {
+  const panelAuctionId = await nfnovelContract.getPanelAuctionId(panelTokenId);
+
+  const bid = ethers.constants.WeiPerEther.mul(1);
+
+  const panelAuction = await nfnovelContract.auctions(panelAuctionId);
+  expect(panelAuction.highestBid).to.be.lt(bid);
+
+  await nfnovelContract
+    .connect(highestBidder)
+    .placeBid(panelAuctionId, { value: bid });
+
+  return {
+    bid,
+    highestBidder,
+    panelAuctionId,
+  };
+};
+
+export const endPanelAuction = async (
+  nfnovelContract: NFNovel,
+  panelTokenId: number | BigNumber,
+  panelAuctionId?: number | BigNumber
+): Promise<void> => {
+  const auctionId =
+    panelAuctionId || (await nfnovelContract.getPanelAuctionId(panelTokenId));
+  const auctionEndTime = (await nfnovelContract.auctions(auctionId)).endTime;
+
+  const currentBlockTime = BigNumber.from((await getCurrentBlock()).timestamp);
+
+  const blockTimeIncrement = auctionEndTime.sub(currentBlockTime);
+
+  if (blockTimeIncrement.gt(0)) await addBlockTime(blockTimeIncrement);
+
+  await nfnovelContract.endPanelAuction(panelTokenId);
+};
+
 /**
  * Bids on behalf of the winner account and ends the auction using @see addBlockTime
  * @param nfnovelContract
@@ -132,47 +177,26 @@ export const setPanelAuctionWinner = async (
   settings: {
     winner: Signer;
     panelTokenId: number | BigNumber;
-    panelAuctionId?: number | BigNumber;
-    bidAmount?: number | BigNumber;
-    auctionDurationSeconds?: number | BigNumber;
   }
 ): Promise<{ bid: number | BigNumber; winner: Signer }> => {
-  const {
-    winner,
-    bidAmount,
-    panelTokenId,
-    panelAuctionId,
-    auctionDurationSeconds,
-  } = settings;
+  const { winner, panelTokenId } = settings;
 
-  const auctionDuration =
-    auctionDurationSeconds ||
-    (await nfnovelContract.auctionDefaults()).duration;
+  const { bid, highestBidder, panelAuctionId } =
+    await setPanelAuctionHighestBidder(nfnovelContract, winner, panelTokenId);
 
-  const auctionId =
-    panelAuctionId || (await nfnovelContract.getPanelAuctionId(panelTokenId));
-
-  const bid = bidAmount || ethers.constants.WeiPerEther.mul(1);
-
-  const panelAuction = await nfnovelContract.auctions(auctionId);
-  expect(panelAuction.highestBid).to.be.lt(bid);
-
-  await nfnovelContract.connect(winner).placeBid(auctionId, { value: bid });
-
-  await addBlockTime(auctionDuration);
-
-  await nfnovelContract.endPanelAuction(panelTokenId);
+  await endPanelAuction(nfnovelContract, panelTokenId, panelAuctionId);
 
   return {
     bid,
-    winner,
+    winner: highestBidder,
   };
 };
 
 /**
+ * @note only for a Page with a single panel
  * Ends the panel auction with the panelOwner as the winner (using @see setPanelAuctionWinner) and mints the panel to them
  */
-export const mintPagePanel = async (
+export const mintSinglePagePanel = async (
   nfnovelContract: NFNovel,
   panelOwner: Signer,
   panelTokenId: number | BigNumber
@@ -185,4 +209,31 @@ export const mintPagePanel = async (
 
   // mint the panel so reveal page will succeed
   await nfnovelContract.connect(panelOwner).mintPanel(panelTokenId);
+};
+
+/**
+ * @note use for Page with multiple panels
+ * Ends the panel auctions with the panelOwner as the winner of each then mints the panels to them
+ */
+export const mintMultiplePagePanels = async (
+  nfnovelContract: NFNovel,
+  panelOwner: Signer,
+  panelTokenIds: (number | BigNumber)[]
+): Promise<void> => {
+  await Promise.all(
+    panelTokenIds.map((panelTokenId) =>
+      setPanelAuctionHighestBidder(nfnovelContract, panelOwner, panelTokenId)
+    )
+  );
+
+  // NOTE: have to execute serially to ensure block time change is valid
+  for (const panelTokenId of panelTokenIds) {
+    await endPanelAuction(nfnovelContract, panelTokenId);
+  }
+
+  await Promise.all(
+    panelTokenIds.map((panelTokenId) =>
+      nfnovelContract.connect(panelOwner).mintPanel(panelTokenId)
+    )
+  );
 };
