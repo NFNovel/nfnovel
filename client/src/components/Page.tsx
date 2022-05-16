@@ -9,10 +9,14 @@ function Page(pageData: any) {
   const pageUrl = "/pages/" + pageId;
 
   const pageLinkClass = () => {
-    const linkClassName = "block border border-nfnovels_border bg-nfnovels_page p-2 rounded-md";
+    const linkClassName = "block border border-nfnovels_border bg-nfnovels_page-form p-2 rounded-md";
     if (pageData.clickable) {
       return (
-        <div className=" hover:border-nfnovels_text cursor-pointer">
+        <div
+          className={
+            linkClassName + " hover:border-nfnovels_text cursor-pointer"
+          }
+        >
           <Link href={{ pathname: pageUrl, query: { pageId: pageId } }}>
             <div className="flex relative">
               <PageContent {...pageData} />
@@ -22,7 +26,7 @@ function Page(pageData: any) {
       );
     } else {
       return (
-        <div className="block border border-none bg-bg-nfnovels_page-form rounded-md">
+        <div className="block border border-none bg-nfnovels_page-form rounded-md">
           <div className="flex relative">
             <PageContent {...pageData} />
           </div>
