@@ -31,8 +31,7 @@ abstract contract Auctionable {
         returns (uint256)
     {
         uint256 _endTime = _getAuction(auctionId).endTime;
-        if(block.timestamp > _endTime)
-            return 0;
+        if (block.timestamp > _endTime) return 0;
         return _endTime - block.timestamp;
     }
 
