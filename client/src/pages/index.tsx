@@ -2,6 +2,8 @@ import styles from "@styles/Home.module.css";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 
+import Header from "../components/Header";
+
 import type { NextPage } from "next";
 import type { BigNumber, Signer } from "ethers";
 import type { Web3Provider } from "@ethersproject/providers";
@@ -47,12 +49,7 @@ const Home: NextPage = () => {
       </div>
     );
 
-  if (!provider || !signer || !account)
-    return (
-      <div className={styles.container}>
-        <button onClick={connectMetamask}>Connect to MetaMask</button>
-      </div>
-    );
+  if (!provider || !signer || !account) return <></>;
 
   return (
     <div className={styles.container}>

@@ -9,6 +9,7 @@ module.exports = {
     es6: true,
   },
   ignorePatterns: [
+    "tailwind.config.js",
     "node_modules",
     "build",
     "coverage",
