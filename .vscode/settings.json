@@ -1,6 +1,8 @@
 {
+  "files.autoSave": "afterDelay",
+  "files.autoSaveDelay": 1000,
   "editor.formatOnSave": true,
-  // NOTE: see .vscode/extensions.json for installation installation of v4 beta
+  // NOTE: use the "pre-release version"
   "editor.defaultFormatter": "rvest.vs-code-prettier-eslint",
   "todo-tree.regex.regex": "(//|#|<!--|;|/\\*|^|^\\s*(-|\\d+.))\\s*($TAGS)",
   "todo-tree.general.debug": true,
