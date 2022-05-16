@@ -3,10 +3,8 @@ import Link from "next/link";
 import PageContent from "./PageContent";
 
 function Page(pageData: any) {
-  console.log(pageData.pageId, "water");
-
   const pageId = pageData.pageId;
-  const pageUrl = "/pages/" + pageId;
+  const pageUrl = "/pages/";
 
   const pageLinkClass = () => {
     const linkClassName = "block border border-nfnovels_border bg-nfnovels_page-form p-2 rounded-md";
@@ -17,7 +15,10 @@ function Page(pageData: any) {
             linkClassName + " hover:border-nfnovels_text cursor-pointer"
           }
         >
-          <Link href={{ pathname: pageUrl, query: { pageId: pageId } }}>
+          <Link
+            href={{ pathname: pageUrl, query: { pageId: pageId } }}
+            passHref
+          >
             <div className="flex relative">
               <PageContent {...pageData} />
             </div>

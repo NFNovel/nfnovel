@@ -10,11 +10,13 @@ function PageContent(pageData) {
 
   return (
     <div className="block">
-      <h5 className="text-crypdit_text-darker text-sm mb-1">
+      <h5 className="text-nfnovels_text-darker text-sm mb-1">
         Created by {mockData.author} {mockData.dateCreated}
       </h5>
-      <h2 className="text-2xl mb-3">{mockData.title}</h2>
-      <div className="text-sm leading-6">{mockData.summary}</div>
+      <h2 className="text-nfnovels_text text-2xl mb-3">{mockData.title}</h2>
+      <div className="text-nfnovels_text text-sm leading-6">
+        {mockData.summary}
+      </div>
     </div>
   );
 }

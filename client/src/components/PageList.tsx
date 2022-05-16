@@ -20,7 +20,7 @@ function PageList() {
 
   return (
     <>
-      <div className="bg-stone-900 px-6 min-h-screen">
+      <div className="bg-slate-100 mt-10 px-6 min-h-screen">
         <InfiniteScroll
           dataLength={pages.length}
           next={fetchMoreData}
