@@ -4,9 +4,9 @@ import {
   getTestSigningAccounts,
   deployNFNovelTestContract,
   setPanelAuctionWinner,
+  mintSinglePagePanel,
+  mintMultiplePagePanels,
 } from "./utils";
-import type { Signer } from "ethers";
-import type { NFNovel } from "../typechain/NFNovel";
 import { expect } from "chai";
 import { OZ_INTERFACE_IDS } from "./constants";
 // eslint-disable-next-line camelcase
@@ -15,6 +15,9 @@ import { Ownable__factory } from "../typechain/factories/Ownable__factory";
 import { Auctionable__factory } from "../typechain/factories/Auctionable__factory";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+
+import type { ContractTransaction, Signer } from "ethers";
+import type { NFNovel } from "../typechain/NFNovel";
 
 describe("NFNovel", () => {
   let owner: Signer;
@@ -299,14 +302,7 @@ describe("NFNovel", () => {
         ).to.be.revertedWith(`PanelNotSold(${panelTokenId})`));
 
       it("with PageAlreadyRevealed if the page has already been revealed to ensure the base URI can only be changed once", async () => {
-        // end panel auction
-        await setPanelAuctionWinner(nfnovelContract, {
-          panelTokenId,
-          winner: bidder,
-        });
-
-        // mint the panel so reveal page will succeed
-        await nfnovelContract.connect(bidder).mintPanel(panelTokenId);
+        await mintSinglePagePanel(nfnovelContract, bidder, panelTokenId);
 
         // reveal page to set isRevealed = true
         await nfnovelContract.revealPage(pageNumber, revealedBaseURI);
@@ -319,12 +315,70 @@ describe("NFNovel", () => {
     });
 
     context("successful call", () => {
-      it("sets the page isRevealed flag to true");
-      it("sets the page baseURI to the revealed base URI");
-      it("emits a PageRevealed(pageNumber, panelTokenIds) event");
-      it(
-        "emits an OpenSea PermanentURI(revealedTokenURI, panelTokenId) event for each panel token"
-      );
+      let nfnovelContract: NFNovel;
+      let transaction: ContractTransaction;
+      // minimal Page struct type for test
+      let page: {
+        isRevealed: boolean;
+        baseURI: string;
+        panelTokenIds: BigNumber[];
+      };
+
+      const pageNumber = 1;
+      const panelsCount = 2;
+      const panelTokenIds = [1, 2];
+      const obscuredBaseURI = "ipfs://obscured";
+      const revealedBaseURI = "ipfs://revealed";
+
+      before(async () => {
+        nfnovelContract = await deployNFNovelTestContract(
+          owner,
+          "Mysterio",
+          "NFN-1"
+        );
+
+        // setup: add page -> mint the panel so revealedPage can be called -> reveal page for tests
+        await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
+
+        await mintMultiplePagePanels(nfnovelContract, bidder, panelTokenIds);
+
+        // capture the transaction to test for emitted events
+        transaction = await nfnovelContract.revealPage(
+          pageNumber,
+          revealedBaseURI
+        );
+
+        page = await nfnovelContract.getPage(pageNumber);
+      });
+
+      it("sets the page isRevealed flag to true", () =>
+        expect(page.isRevealed).to.be.true);
+
+      it("sets the page baseURI to the revealed base URI", () =>
+        expect(page.baseURI).to.equal(revealedBaseURI));
+
+      it("emits an OpenSea PermanentURI(revealedTokenURI, panelTokenId) event for each panel token", async () => {
+        for (const panelTokenId of panelTokenIds) {
+          const expectedTokenURI = `${revealedBaseURI}/${panelTokenId}`;
+
+          await expect(transaction)
+            .to.emit(
+              nfnovelContract,
+              nfnovelContract.interface.events["PermanentURI(string,uint256)"]
+                .name
+            )
+            .withArgs(expectedTokenURI, panelTokenId);
+        }
+      });
+
+      it("emits a PageRevealed(pageNumber, panelTokenIds) event", () =>
+        expect(transaction)
+          .to.emit(
+            nfnovelContract,
+            nfnovelContract.interface.events["PageRevealed(uint256,uint256[])"]
+              .name
+          )
+          .withArgs(pageNumber, page.panelTokenIds));
     });
   });
 
