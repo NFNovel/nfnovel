@@ -1,5 +1,12 @@
+import AuctionModal from "./AuctionModal";
+
 function Page(pageData: any) {
-  return <>Hello</>;
+  return (
+    <>
+      <>Hello</>
+      <AuctionModal></AuctionModal>
+    </>
+  );
 }
 
 export default Page;
