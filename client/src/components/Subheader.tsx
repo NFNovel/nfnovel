@@ -1,6 +1,6 @@
 import Image from "next/image";
 
-import SubheaderBanner from "./subheader.jpg";
+import SubheaderBanner from "./banner-images/subheader-banner.jpg";
 
 function Subheader(props: any) {
   return (
