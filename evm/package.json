@@ -9,13 +9,15 @@
     "test": "hardhat test",
     "clean": "hardhat clean",
     "build": "hardhat compile",
-    "deploy": "hardhat run scripts/deploy.ts --network"
+    "deploy": "hardhat run scripts/deploy.ts --network",
+    "addPages": "hardhat run scripts/add-page.ts --network localhost"
   },
   "keywords": [],
   "author": "the-vampiire",
   "license": "UNLICENSED",
   "dependencies": {
-    "@openzeppelin/contracts": "^4.5.0"
+    "@openzeppelin/contracts": "^4.5.0",
+    "nfnovel-dapp": "file:.."
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.0.5",
