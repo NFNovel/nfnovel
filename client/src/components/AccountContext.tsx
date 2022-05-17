@@ -1,16 +1,16 @@
 import React from "react";
 
-type Value = string;
+type Address = string;
 
-type Account = React.Context<{
-  publicKey: Value;
-  setPublicKey: (value: Value) => void;
-}>;
+type AccountContext = {
+  publicKey: Address;
+  setPublicKey: (value: Address) => void;
+};
 
-const AccountContext = React.createContext({
+const AccountContext = React.createContext<AccountContext>({
   publicKey: "",
   // eslint-disable-next-line @typescript-eslint/no-empty-function
-  setPublicKey: (value: Value) => {},
+  setPublicKey: (value: Address) => {},
 });
 
 export default AccountContext;

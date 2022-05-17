@@ -27,5 +27,14 @@
   "license": "UNLICENSED",
   "devDependencies": {
     "concurrently": "^7.1.0"
+  },
+  "dependencies": {
+    "@blueprintjs/core": "^4.3.2",
+    "@types/pure-render-decorator": "^0.2.28",
+    "@types/react": "^18.0.9",
+    "@types/react-addons-css-transition-group": "^15.0.7",
+    "@types/react-dom": "^18.0.4",
+    "react": "^18.1.0",
+    "react-dom": "^18.1.0"
   }
 }

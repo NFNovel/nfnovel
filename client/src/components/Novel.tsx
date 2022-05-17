@@ -3,6 +3,7 @@ import { useEffect, useState } from "react";
 
 import Subheader from "./Subheader";
 import Board from "./Board";
+import PageList from "./PageList";
 
 function Novel(props: any) {
   return (
@@ -11,7 +12,7 @@ function Novel(props: any) {
         title={props.title}
         author={props.author}
       />
-      <Board />
+      <PageList />
     </>
   );
 }
