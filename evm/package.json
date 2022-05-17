@@ -7,6 +7,7 @@
     "node": "hardhat node",
     "pretest": "npm run build",
     "test": "hardhat test",
+    "dev": "hardhat run scripts/dev.ts --network localhost",
     "clean": "hardhat clean",
     "build": "hardhat compile",
     "deploy": "hardhat run scripts/deploy.ts --network",

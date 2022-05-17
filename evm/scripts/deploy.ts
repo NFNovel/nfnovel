@@ -1,13 +1,17 @@
 import "dotenv/config";
 import { ethers } from "hardhat";
-import recordDeployment from "./record-deployment";
+import recordDeployment, {
+  IContractDeploymentRecord,
+} from "./record-deployment";
 
 interface IContract {
   name: string;
   args: unknown[];
 }
 
-const deployContract = async (contract: IContract) => {
+export const deployContract = async (
+  contract: IContract
+): Promise<IContractDeploymentRecord> => {
   const { name, args } = contract;
 
   const ContractFactory = await ethers.getContractFactory(name);
@@ -21,7 +25,9 @@ const deployContract = async (contract: IContract) => {
   return deploymentRecord;
 };
 
-async function main() {
+export const deployContracts = async (): Promise<{
+  [contractName: string]: IContractDeploymentRecord;
+}> => {
   // set the contract name and deployment args in here
   // NOTE: must match the <name>.sol file, ex: for Greeter.sol contractName = "Greeter"
   const contracts: IContract[] = [
@@ -35,12 +41,18 @@ async function main() {
     },
   ];
 
-  for (const contract of contracts) {
-    await deployContract(contract);
-  }
-}
+  const deployments: { [contractName: string]: IContractDeploymentRecord } = {};
 
-main().catch((error) => {
+  for (const contract of contracts) {
+    deployments[contract.name] = await deployContract(contract);
+  }
+
+  return deployments;
+};
+
+deployContracts().catch((error) => {
   console.error(error);
   process.exitCode = 1;
 });
+
+export default deployContracts;
