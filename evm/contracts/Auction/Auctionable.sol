@@ -30,7 +30,9 @@ abstract contract Auctionable {
         view
         returns (uint256)
     {
-        return _getAuction(auctionId).endTime - block.timestamp;
+        uint256 _endTime = _getAuction(auctionId).endTime;
+        if (block.timestamp > _endTime) return 0;
+        return _endTime - block.timestamp;
     }
 
     function placeBid(uint256 auctionId) public payable returns (bool) {

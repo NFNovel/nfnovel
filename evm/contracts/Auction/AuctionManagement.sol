@@ -127,11 +127,7 @@ library AuctionManagement {
     }
 
     function _confirmAuctionIsActive(Auction storage auction) private {
-        if (
-            auction.state == AuctionStates.Pending ||
-            auction.state == AuctionStates.Ended ||
-            auction.state == AuctionStates.Cancelled
-        ) revert AuctionNotActive();
+        if (auction.state != AuctionStates.Active) revert AuctionNotActive();
 
         if (block.timestamp > auction.endTime)
             _endAuction(auction, AuctionStates.Ended);

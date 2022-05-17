@@ -1,7 +1,7 @@
 {
-  "name": "nfnovel-chain",
+  "name": "nfnovel-evm",
   "version": "1.0.0",
-  "description": "",
+  "description": "EVM component of NFNovel (contracts, scripts)",
   "main": "index.js",
   "scripts": {
     "node": "hardhat node",

@@ -3,9 +3,10 @@ import {
   computeInterfaceId,
   getTestSigningAccounts,
   deployNFNovelTestContract,
+  setPanelAuctionWinner,
+  mintSinglePagePanel,
+  mintMultiplePagePanels,
 } from "./utils";
-import type { Signer } from "ethers";
-import type { NFNovel } from "../typechain/NFNovel";
 import { expect } from "chai";
 import { OZ_INTERFACE_IDS } from "./constants";
 // eslint-disable-next-line camelcase
@@ -14,6 +15,9 @@ import { Ownable__factory } from "../typechain/factories/Ownable__factory";
 import { Auctionable__factory } from "../typechain/factories/Auctionable__factory";
 import { BigNumber } from "ethers";
 import { ethers } from "hardhat";
+
+import type { ContractTransaction, Signer } from "ethers";
+import type { NFNovel } from "../typechain/NFNovel";
 
 describe("NFNovel", () => {
   let owner: Signer;
@@ -211,13 +215,13 @@ describe("NFNovel", () => {
       it("with NotPanelAuctionWinner(panelAuctionId) if the caller is not the winner of the auction", async () => {
         const auctionDurationSeconds = 100;
 
-        await nfnovelContract.addPage(1, "secondPage");
-
         await nfnovelContract.setAuctionDefaults({
           duration: auctionDurationSeconds,
           minimumBidValue: 0,
           startingValue: 0,
         });
+
+        await nfnovelContract.addPage(1, "secondPage");
 
         await nfnovelContract.connect(bidder).placeBid(2, {
           value: ethers.constants.WeiPerEther.mul(1),
@@ -228,21 +232,15 @@ describe("NFNovel", () => {
         // sanity check
         expect(bidderAddress).not.to.hexEqual(nonOwnerAddress);
 
-        expect(
+        await nfnovelContract.endPanelAuction(2);
+
+        await expect(
           nfnovelContract.connect(nonOwner).mintPanel(2)
         ).to.be.revertedWith("NotPanelAuctionWinner(2)");
       });
     });
 
     context("successful call", () => {
-      it(
-        "mints the panel associating it with the auction winner (caller) address"
-      );
-    });
-  });
-
-  describe("revealPage", () => {
-    context("reverts", () => {
       let nfnovelContract: NFNovel;
       before(async () => {
         nfnovelContract = await deployNFNovelTestContract(
@@ -251,49 +249,199 @@ describe("NFNovel", () => {
           "NFN-1"
         );
       });
+      it("mints the panel associating it with the auction winner (caller) address", async () => {
+        await nfnovelContract.addPage(1, "secondPage");
 
-      it("with PageNotFound if the page is not found");
-      it("with PageAlreadyRevealed if the page has already been revealed");
-      it(
-        "with PanelNotSold(panelTokenId) if a panel of the page has not been sold"
-      );
+        await setPanelAuctionWinner(nfnovelContract, {
+          winner: bidder,
+          panelTokenId: 1,
+        });
+
+        await nfnovelContract.connect(bidder).mintPanel(1);
+
+        expect(await nfnovelContract.ownerOf(1)).to.hexEqual(bidderAddress);
+      });
+    });
+  });
+
+  describe("revealPage", () => {
+    context("reverts", () => {
+      let nfnovelContract: NFNovel;
+
+      const pageNumber = 1;
+      const panelsCount = 1;
+      const panelTokenId = 1;
+      const obscuredBaseURI = "ipfs://obscured";
+      const revealedBaseURI = "ipfs://revealed";
+
+      before(async () => {
+        nfnovelContract = await deployNFNovelTestContract(
+          owner,
+          "Mysterio",
+          "NFN-1"
+        );
+
+        await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
+      });
+
+      it("with PageNotFound if the page is not found", () =>
+        expect(
+          nfnovelContract.revealPage(pageNumber + 1, revealedBaseURI)
+        ).to.be.revertedWith("PageNotFound"));
+
+      it("if called by a non-owner", () =>
+        expect(
+          nfnovelContract
+            .connect(nonOwner)
+            .revealPage(pageNumber, revealedBaseURI)
+        ).to.be.reverted);
+
+      it("with PanelNotSold(panelTokenId) if a panel of the page has not been sold", () =>
+        expect(
+          nfnovelContract.revealPage(pageNumber, revealedBaseURI)
+        ).to.be.revertedWith(`PanelNotSold(${panelTokenId})`));
+
+      it("with PageAlreadyRevealed if the page has already been revealed to ensure the base URI can only be changed once", async () => {
+        await mintSinglePagePanel(nfnovelContract, bidder, panelTokenId);
+
+        // reveal page to set isRevealed = true
+        await nfnovelContract.revealPage(pageNumber, revealedBaseURI);
+
+        // attempt to reveal the same page again and expect to be reverted
+        return expect(
+          nfnovelContract.revealPage(pageNumber, revealedBaseURI)
+        ).to.be.revertedWith("PageAlreadyRevealed");
+      });
     });
 
     context("successful call", () => {
-      it("sets the page isRevealed flag to true");
-      it("sets the page baseURI to the revealed base URI");
-      it("emits a PageRevealed(pageNumber, panelTokenIds) event");
-      it(
-        "emits an OpenSea PermanentURI(revealedTokenURI, panelTokenId) event for each panel token"
-      );
+      let nfnovelContract: NFNovel;
+      let transaction: ContractTransaction;
+      // minimal Page struct type for test
+      let page: {
+        isRevealed: boolean;
+        baseURI: string;
+        panelTokenIds: BigNumber[];
+      };
+
+      const pageNumber = 1;
+      const panelsCount = 2;
+      const panelTokenIds = [1, 2];
+      const obscuredBaseURI = "ipfs://obscured";
+      const revealedBaseURI = "ipfs://revealed";
+
+      before(async () => {
+        nfnovelContract = await deployNFNovelTestContract(
+          owner,
+          "Mysterio",
+          "NFN-1"
+        );
+
+        // setup: add page -> mint the panel so revealedPage can be called -> reveal page for tests
+        await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
+
+        await mintMultiplePagePanels(nfnovelContract, bidder, panelTokenIds);
+
+        // capture the transaction to test for emitted events
+        transaction = await nfnovelContract.revealPage(
+          pageNumber,
+          revealedBaseURI
+        );
+
+        page = await nfnovelContract.getPage(pageNumber);
+      });
+
+      it("sets the page isRevealed flag to true", () =>
+        expect(page.isRevealed).to.be.true);
+
+      it("sets the page baseURI to the revealed base URI", () =>
+        expect(page.baseURI).to.equal(revealedBaseURI));
+
+      it("emits an OpenSea PermanentURI(revealedTokenURI, panelTokenId) event for each panel token", async () => {
+        for (const panelTokenId of panelTokenIds) {
+          const expectedTokenURI = `${revealedBaseURI}/${panelTokenId}`;
+
+          await expect(transaction)
+            .to.emit(
+              nfnovelContract,
+              nfnovelContract.interface.events["PermanentURI(string,uint256)"]
+                .name
+            )
+            .withArgs(expectedTokenURI, panelTokenId);
+        }
+      });
+
+      it("emits a PageRevealed(pageNumber, panelTokenIds) event", () =>
+        expect(transaction)
+          .to.emit(
+            nfnovelContract,
+            nfnovelContract.interface.events["PageRevealed(uint256,uint256[])"]
+              .name
+          )
+          .withArgs(pageNumber, page.panelTokenIds));
     });
   });
 
   describe("view functions", () => {
-    it("pages(pageNumber): returns the Page");
+    let nfnovelContract: NFNovel;
 
-    it("panelPages(panelTokenId): returns the page number of the panel");
+    const pageNumber = 1;
+    const panelsCount = 2;
+    const panelTokenIds = [1, 2];
+    const obscuredBaseURI = "ipfs://obscured";
 
-    it("panelAuctions(panelTokenId): returns the auction ID");
+    before(async () => {
+      nfnovelContract = await deployNFNovelTestContract(
+        owner,
+        "Mysterio",
+        "NFN-1"
+      );
 
-    it("tokenURI(panelTokenId): returns {Page.baseURI}/{panelTokenId}");
+      await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
+    });
+
+    it("getPage(pageNumber): returns the Page", async () => {
+      const page = await nfnovelContract.getPage(pageNumber);
+      expect(page.pageNumber).to.eq(pageNumber);
+      expect(page.isRevealed).to.be.false;
+      expect(page.baseURI).to.eq(obscuredBaseURI);
+      expect(page.panelTokenIds).to.deep.eq(panelTokenIds.map(BigNumber.from));
+    });
+
+    it("getPanelPageNumber(panelTokenId): returns the page number of the panel", async () => {
+      for (const panelTokenId of panelTokenIds) {
+        expect(await nfnovelContract.getPanelPageNumber(panelTokenId)).to.eq(
+          pageNumber
+        );
+      }
+    });
+
+    it("getPanelAuctionId(panelTokenId): returns the auction ID", async () => {
+      for (const panelTokenId of panelTokenIds) {
+        // panelTokenId and panelAuctionId are sequential, should be equal
+        expect(await nfnovelContract.getPanelAuctionId(panelTokenId)).to.eq(
+          panelTokenId
+        );
+      }
+    });
+
+    it("tokenURI(panelTokenId): returns {Page.baseURI}/{panelTokenId}", async () => {
+      for (const panelTokenId of panelTokenIds) {
+        const expectedTokenURI = `${obscuredBaseURI}/${panelTokenId}`;
+        expect(await nfnovelContract.tokenURI(panelTokenId)).to.eq(
+          expectedTokenURI
+        );
+      }
+    });
 
     context("isPageSold", () => {
-      it("returns true if all panels of the page have been sold");
-      it("returns false if any panel of the page has not been sold");
-    });
-  });
+      it("returns false if any panel of the page has not been sold", async () =>
+        expect(await nfnovelContract.isPageSold(pageNumber)).to.be.false);
 
-  describe("Panel auctions", () => {
-    // TODO: auction functions (bidding)
-    // THINK: separate to Auctionable test suite (how to put it on a dummy contract to isolate its behavior?)
-
-    context("view functions", () => {
-      it("auctions(panelAuctionId): returns the Auction of the panel token");
-      it("auctionDefaults: returns the default Auction settings");
-      it(
-        "auctionTimeRemaining(panelAuctionId): returns the unix seconds remaining in the panel auction"
-      );
+      it("returns true if all panels of the page have been sold", async () => {
+        await mintMultiplePagePanels(nfnovelContract, bidder, panelTokenIds);
+        expect(await nfnovelContract.isPageSold(pageNumber)).to.be.true;
+      });
     });
   });
 });
