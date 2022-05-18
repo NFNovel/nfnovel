@@ -35,7 +35,7 @@ const recordDeployment: (
     },
   };
 
-  const dirPath = resolve(__dirname, `../deployments`);
+  const dirPath = resolve(__dirname, `../../deployments`);
 
   await stat(dirPath).catch(async () => {
     console.log("Creating deployments dir at: ", dirPath);
