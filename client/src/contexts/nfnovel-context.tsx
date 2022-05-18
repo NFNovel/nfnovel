@@ -50,7 +50,10 @@ const WithNFNovel = (props: { children?: React.ReactNode }) => {
     const loadMetamaskProvider = async () => {
       if (!window.ethereum) return;
 
-      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      const provider = new ethers.providers.Web3Provider(
+        window.ethereum,
+        NFNovelDeployment.network,
+      );
 
       setMetamaskProvider(provider);
       setNfnovel(nfnovel.connect(provider));
