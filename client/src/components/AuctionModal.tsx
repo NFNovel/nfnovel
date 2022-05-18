@@ -1,5 +1,12 @@
 /* eslint-disable @next/next/no-img-element */
-import { Button, Drawer, Position } from "@blueprintjs/core";
+import {
+  Button,
+  Drawer,
+  FormGroup,
+  InputGroup,
+  NumericInput,
+  Position,
+} from "@blueprintjs/core";
 import { useState } from "react";
 
 function AuctionModal(props: any) {
@@ -24,6 +31,23 @@ function AuctionModal(props: any) {
   //     size: undefined,
   //     usePortal: true,
   // };
+
+  //   public state: NumericInputProps = {
+  //     allowNumericCharactersOnly: true,
+  //     buttonPosition: "right",
+  //     disabled: false,
+  //     fill: false,
+  //     intent: Intent.NONE,
+  //     large: false,
+  //     majorStepSize: 10,
+  //     max: 100,
+  //     min: 0,
+  //     minorStepSize: 0.1,
+  //     selectAllOnFocus: false,
+  //     selectAllOnIncrement: false,
+  //     stepSize: 1,
+  //     value: "",
+  // };
   return (
     <>
       <Drawer
@@ -46,14 +70,31 @@ function AuctionModal(props: any) {
             }
             className="border border-indigo-600 h-80"
           />
-          <div className="bg-slate-500 flex flex-wrap flex-col">
+          <div className="flex flex-wrap flex-col">
             <div className="p-5">Highest bid: 1.2 ETH</div>
             <div className="p-5">
               Highest bidder: 0x1aVF3F8sa4f5sa8d6wd46D5sd6
             </div>
-            <div className="p-5">Place bid: insert amount of ETH </div>
+            <div className="p-5 flex flex-wrap">
+              <FormGroup
+                className=""
+                helperText=""
+                inline={false}
+                label="Place your bid:"
+                labelFor="text-input"
+                labelInfo="(required)"
+              >
+                <NumericInput
+                  placeholder="Enter a number..."
+                  majorStepSize={0.1}
+                  min={0}
+                  stepSize={0.1}
+                  allowNumericCharactersOnly={true}
+                />
+              </FormGroup>
+            </div>
             <Button
-              className="p-5 self-stretch"
+              className="p-5"
               text="Place Bid"
               onClick={() => {
                 alert("bid placed");
@@ -61,9 +102,7 @@ function AuctionModal(props: any) {
             ></Button>
           </div>
 
-          <div className="bg-red-400 flex-wrap p-10">
-            Time remaining! 05:15:36
-          </div>
+          <div className="bg-red-400 p-10">Time remaining! 05:15:36</div>
         </div>
       </Drawer>
       <Button
