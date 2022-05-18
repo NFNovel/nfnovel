@@ -1,16 +1,69 @@
 /* eslint-disable @next/next/no-img-element */
-import {
-  Button,
-  Drawer,
-  FormGroup,
-  InputGroup,
-  NumericInput,
-  Position,
-} from "@blueprintjs/core";
-import { useState } from "react";
+import { Button, Drawer, NumericInput, Position } from "@blueprintjs/core";
+import { BigNumber, ethers } from "ethers";
+import { useState, useContext, useEffect } from "react";
+import { NFNovelContext } from "src/contexts/nfnovel-context";
+import { DateTime, Duration } from "luxon";
+
+export interface IAuction {
+  state: AuctionStates;
+  id: BigNumber;
+  tokenId: BigNumber;
+  startTime: BigNumber;
+  endTime: BigNumber;
+  startingValue: BigNumber;
+  minimumBidValue: BigNumber;
+  highestBid: BigNumber;
+  highestBidder: string;
+}
+
+export enum AuctionStates {
+  Pending,
+  Active,
+  Ended,
+  Cancelled,
+}
 
 function AuctionModal(props: any) {
   const [visible, setVisibility] = useState(false);
+  const [bidInEth, setBidInEth] = useState(0);
+  const [panelAuctionId, setPanelAuctionId] = useState<BigNumber>();
+  const [auction, setAuction] = useState<IAuction>();
+  const [timeRemaining, setTimeRemaining] = useState<Duration>();
+
+  const {
+    nfnovel, // novel contract instance
+  } = useContext(NFNovelContext);
+
+  const panelId = 1; // receive as a prop from modal call
+
+  useEffect(() => {
+    const getPanelAuctionId = async () => {
+      if (!nfnovel) return null;
+      const panelAuctionId = await nfnovel.getPanelAuctionId(panelId);
+      setAuction(await nfnovel.auctions(panelAuctionId));
+      setPanelAuctionId(panelAuctionId);
+    };
+    const updateTimeLeft = () => {
+      if (!auction) return;
+      console.log({
+        dateTime: DateTime.fromSeconds(auction.endTime.toNumber()).diffNow([
+          "seconds",
+        ]).seconds,
+        endTime: DateTime.fromSeconds(auction.endTime.toNumber()).toSeconds(),
+        current: Date.now(),
+      });
+      setTimeRemaining(
+        DateTime.fromSeconds(auction.endTime.toNumber()).diffNow([
+          "seconds",
+          "hours",
+          "minutes",
+        ]),
+      );
+    };
+    getPanelAuctionId();
+    updateTimeLeft();
+  }, [panelAuctionId, nfnovel, auction, timeRemaining]);
 
   const visibleOn = () => {
     setVisibility(true);
@@ -20,34 +73,20 @@ function AuctionModal(props: any) {
     setVisibility(false);
   };
 
-  //   const state: IDrawerExampleState = {
-  //     autoFocus: true,
-  //     canEscapeKeyClose: true,
-  //     canOutsideClickClose: true,
-  //     enforceFocus: true,
-  //     hasBackdrop: true,
-  //     isOpen: false,
-  //     position: Position.RIGHT,
-  //     size: undefined,
-  //     usePortal: true,
-  // };
+  const handleBidInEth = (bidInETH: number) => {
+    setBidInEth(bidInETH);
+  };
 
-  //   public state: NumericInputProps = {
-  //     allowNumericCharactersOnly: true,
-  //     buttonPosition: "right",
-  //     disabled: false,
-  //     fill: false,
-  //     intent: Intent.NONE,
-  //     large: false,
-  //     majorStepSize: 10,
-  //     max: 100,
-  //     min: 0,
-  //     minorStepSize: 0.1,
-  //     selectAllOnFocus: false,
-  //     selectAllOnIncrement: false,
-  //     stepSize: 1,
-  //     value: "",
-  // };
+  const placeBid = async () => {
+    if (!panelAuctionId || !nfnovel) return null;
+
+    await nfnovel.placeBid(panelAuctionId, {
+      value: ethers.constants.WeiPerEther.mul(bidInEth),
+    });
+  };
+
+  if (!auction) return null;
+
   return (
     <>
       <Drawer
@@ -71,38 +110,40 @@ function AuctionModal(props: any) {
             className="border border-indigo-600 h-80"
           />
           <div className="flex flex-wrap flex-col">
-            <div className="p-5">Highest bid: 1.2 ETH</div>
             <div className="p-5">
-              Highest bidder: 0x1aVF3F8sa4f5sa8d6wd46D5sd6
+              Highest bid:{" "}
+              {auction?.highestBid.div(ethers.constants.WeiPerEther).toString()}{" "}
+              ETH
             </div>
-            <div className="p-5 flex flex-wrap">
-              <FormGroup
-                className=""
-                helperText=""
-                inline={false}
-                label="Place your bid:"
-                labelFor="text-input"
-                labelInfo="(required)"
-              >
-                <NumericInput
-                  placeholder="Enter a number..."
-                  majorStepSize={0.1}
-                  min={0}
-                  stepSize={0.1}
-                  allowNumericCharactersOnly={true}
-                />
-              </FormGroup>
+            <div className="p-5">Highest bidder: {auction?.highestBidder}</div>
+            <div className="p-5 flex flex-wrap flex-col">
+              <div>Place your Bid: </div>
+              <NumericInput
+                placeholder="Enter a number..."
+                majorStepSize={0.1}
+                min={0}
+                stepSize={0.1}
+                allowNumericCharactersOnly={true}
+                onValueChange={handleBidInEth}
+              />
             </div>
             <Button
               className="p-5"
               text="Place Bid"
-              onClick={() => {
-                alert("bid placed");
-              }}
+              onClick={placeBid}
             ></Button>
           </div>
 
-          <div className="bg-red-400 p-10">Time remaining! 05:15:36</div>
+          <div className="bg-red-400 p-10 flex flex-col">
+            Time remaining!{" "}
+            <div>
+              {!timeRemaining ?
+                "HELLO WORLD" :
+                timeRemaining.toFormat(
+                  "hh 'hours', mm 'minutes', ss 'seconds'",
+                )}
+            </div>
+          </div>
         </div>
       </Drawer>
       <Button
