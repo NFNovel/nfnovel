@@ -1,68 +1,62 @@
 import React from "react";
-import Image from "next/image";
 import { useContext } from "react";
-import { SearchIcon } from "@heroicons/react/outline";
 import {
   Alignment,
   Button,
-  Classes,
-  H5,
   Navbar,
   NavbarDivider,
   NavbarGroup,
   NavbarHeading,
-  Switch,
-  Icon,
 } from "@blueprintjs/core";
-
-import AccountContext from "./AccountContext";
+import { NFNovelContext } from "src/contexts/nfnovel-context";
+import { connectToMetamask } from "src/utils/connect-metamask";
 
 function Header() {
-  const account = useContext(AccountContext);
+  const {
+    connectedAccount,
+    metamaskProvider,
+    connectContractToSigner
+  } = useContext(NFNovelContext);
 
-  const shortAccountAdr = account.publicKey.substring(0, 6) +
+  const shortAccountAddress = connectedAccount?.address.substring(0, 6) +
     "..." +
-    account.publicKey.substring(37, 41);
+    connectedAccount?.address.substring(37, 41);
 
   const connectWallet = async () => {
-    try {
-      const { ethereum } = window;
+    if (!metamaskProvider) {
+      console.log("metamask not available");
 
-      if (!ethereum) {
-        alert("Get MetaMask!");
-
-        return;
-      }
-
-      const accounts = await ethereum.request({
-        method: "eth_requestAccounts",
-      });
-
-      console.log("Connected", accounts[0]);
-
-      account.setPublicKey(accounts[0]);
-
-      //setCurrentAccount(accounts[0]);
-    } catch (error) {
-      console.log(error);
+      return;
     }
+    const connectedAccount = await connectToMetamask(metamaskProvider);
+    if (!connectedAccount) {
+      console.log("failed to connect to account");
+
+      return;
+    }
+
+    connectContractToSigner(connectedAccount);
   };
+
+  // THINK: consider having 3 potential "buttons"
+  // connected (truncated address), connect, metamask not found
 
   return (
     <Navbar>
       <NavbarGroup align={Alignment.RIGHT}>
         <NavbarHeading>NFNovel</NavbarHeading>
         <NavbarDivider />
-        {account.publicKey ? (
+        {connectedAccount ? (
           <Button
             className="bp4-minimal"
-            text={shortAccountAdr}
+            text={shortAccountAddress}
           ></Button>
         ) : (
           <Button
             className="bp4-minimal"
             text="Connect to MetaMask"
             onClick={connectWallet}
+            disabled={!metamaskProvider}
           ></Button>
         )}
       </NavbarGroup>
