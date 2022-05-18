@@ -15,6 +15,8 @@ export const addPages = async (
     nfnovelContractAddress
   );
 
+  console.log({ nfnovelContractAddress });
+
   const firstPageObscuredBaseURI = "";
   const secondPageObscuredBaseURI = "";
 
