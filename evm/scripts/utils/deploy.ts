@@ -44,15 +44,11 @@ export const deployContracts = async (): Promise<{
   const deployments: { [contractName: string]: IContractDeploymentRecord } = {};
 
   for (const contract of contracts) {
-    deployments[contract.name] = await deployContract(contract);
+    const deploymentRecord = await deployContract(contract);
+    deployments[contract.name] = deploymentRecord;
   }
 
   return deployments;
 };
-
-deployContracts().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
 
 export default deployContracts;

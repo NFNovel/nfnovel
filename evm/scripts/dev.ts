@@ -1,5 +1,5 @@
-import { deployContracts } from "./deploy";
-import { addPages } from "./add-pages";
+import { deployContracts } from "./utils/deploy";
+import { addPages } from "./utils/add-pages";
 
 async function devSetup(): Promise<void> {
   /**
