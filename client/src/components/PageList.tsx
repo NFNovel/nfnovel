@@ -19,6 +19,7 @@ function PageList() {
   );
 
   const fetchPageData = (pageNum: number) => {
+    console.log("water")
     NFNovelcontract.getPage(pageNum)
       .then((pageData: any) => {
         setPages([...pages, pageData]);
@@ -36,6 +37,7 @@ function PageList() {
   return (
     <>
       <div className="bg-slate-100 px-6 min-h-screen">
+        
         <InfiniteScroll
           dataLength={pages.length}
           next={() => fetchPageData(pages.length + 1)}

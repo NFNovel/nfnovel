@@ -30,7 +30,12 @@ function Page(props: any) {
   ];
 
   return (
-    <section className="mt-12 relative overflow-hidden py-28 px-4 border border-gray-900 sm:px-8">
+    <section className="mt-12 relative overflow-hidden py-12 px-4 border border-gray-900 sm:px-8">
+      <div className="text-right mb-10 text-2xl">
+        {parsedPageData.isRevealed == false ?
+          "Active Auction" :
+          "Auction Ended"}
+      </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {posts.map((items, key) => (
           <article
