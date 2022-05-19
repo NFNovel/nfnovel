@@ -41,7 +41,7 @@ task("revealPage", "Reveals the page")
       // cover
       1: "ipfs://QmcLP748DuiaWhky7kmi4VPL7r6LGV5njyzZ6HdusvhfBR",
       // first page
-      2: "ipfs://QmQJB2d9EQDiLMXQNsiVk6PCRYGbXMwiNkyrNK4HSpwCBL",
+      2: "ipfs://QmXa2JNSeLTznLFf3UpUXpoDygKAdMX2v92iFAdEDNJTp4",
     };
 
     const revealedBaseURI = revealedBaseURIs[pageNumber];

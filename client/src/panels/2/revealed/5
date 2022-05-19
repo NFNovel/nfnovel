@@ -1,8 +1,8 @@
 {
-  "description": "Batman Page 2, Panel 5",
+  "description": "Batman Page 2, Panel 4",
   "external_url": "https://nfnovel.com/Batman",
-  "image": "ipfs://QmXRxvjFDXa5188GTuRUAGfkq2eBBP34SxXYTtUWgTeLuv",
-  "name": "Batman-2-5",
+  "image": "ipfs://Qmezeeqe6QZAS3vbLZTCcdE5g8dqQWLhc6zwMia52A3EPT",
+  "name": "Batman-2-4",
   "attributes": [
     {
       "trait_type": "height",
@@ -18,7 +18,7 @@
     },
     {
       "trait_type": "panel",
-      "value": 5
+      "value": 4
     }
   ]
 }
