@@ -1,0 +1,24 @@
+{
+  "name": "Batman-2-1",
+  "external_url": "https://nfnovel.com/Batman",
+  "description": "Batman Page 2, Panel 1",
+  "image": "ipfs://QmescraKiGQ7GDT3rPj7pviW3XTrnVu1c1bvtYZVC6Pkqd",
+  "attributes": [
+    {
+      "trait_type": "height",
+      "value": 1
+    },
+    {
+      "trait_type": "width",
+      "value": 1
+    },
+    {
+      "trait_type": "page",
+      "value": 2
+    },
+    {
+      "trait_type": "panel",
+      "value": 1
+    }
+  ]
+}

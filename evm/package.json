@@ -10,8 +10,8 @@
     "dev": "hardhat run scripts/dev.ts --network localhost",
     "clean": "hardhat clean",
     "build": "hardhat compile",
-    "deploy": "hardhat run scripts/deploy.ts --network",
-    "addPages": "hardhat run scripts/add-page.ts --network localhost"
+    "revealPage": "hardhat revealPage --network localhost --page",
+    "deploy": "hardhat run scripts/deploy.ts --network"
   },
   "keywords": [],
   "author": "the-vampiire",
