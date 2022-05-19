@@ -34,6 +34,7 @@
     "@types/react": "^18.0.9",
     "@types/react-addons-css-transition-group": "^15.0.7",
     "@types/react-dom": "^18.0.4",
+    "luxon": "^2.4.0",
     "react": "^18.1.0",
     "react-dom": "^18.1.0"
   }
