@@ -1,5 +1,6 @@
 import { deployContracts } from "./utils/deploy";
 import { addPages } from "./utils/add-pages";
+import { ethers } from "hardhat";
 
 async function devSetup(): Promise<void> {
   /**
@@ -7,6 +8,19 @@ async function devSetup(): Promise<void> {
    * 2. add the pages
    */
   const deployments = await deployContracts();
+
+  const nfnovel = await ethers.getContractAt(
+    "NFNovel",
+    deployments.NFNovel.contractAddress
+  );
+
+  // set defaults BEFORE adding pages (which creates panel auctions)
+  await nfnovel.setAuctionDefaults({
+    duration: 2 * 60,
+    startingValue: 2,
+    minimumBidValue: 0,
+  });
+
   await addPages(deployments.NFNovel.contractAddress);
 }
 
