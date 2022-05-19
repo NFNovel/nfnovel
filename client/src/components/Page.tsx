@@ -1,4 +1,6 @@
-function Page(props: any) {
+import type { Page } from "src/types/page";
+
+function Page(props: { pageData: Page }) {
   const pageData = props.pageData;
 
   const parsedPageData = {
@@ -8,7 +10,7 @@ function Page(props: any) {
     panelTokenIds: pageData.panelTokenIds,
   };
 
-  function toggleAuthModal(event) {
+  function toggleAuctionModal(event) {
     console.log(event);
   }
 
@@ -39,7 +41,7 @@ function Page(props: any) {
           <article
             className="max-w-md mx-auto mt-4 bg-blue-800 shadow-lg border rounded-md duration-300 hover:shadow-sm"
             key={key}
-            onClick={(e) => toggleAuthModal(key)}
+            onClick={(e) => toggleAuctionModal(key)}
           >
             <div className="filter opacity-100 hover:opacity-50 hover:red-500 duration-1000">
               <img
