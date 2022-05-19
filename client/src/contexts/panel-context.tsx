@@ -20,7 +20,7 @@ export type PanelMetadata = {
   }[];
 };
 
-export type PagePanelsData = {
+export type PanelData = {
   metadata: PanelMetadata | null;
   imageSource: string | null;
 };
@@ -32,7 +32,7 @@ export type PanelContext = {
   getPanelImageSource: (
     panelTokenId: BigNumber | number,
   ) => Promise<string | null>;
-  getPagePanelsData: (page: Page) => Promise<PagePanelsData[]>;
+  getPagePanelsData: (page: Page) => Promise<PanelData[]>;
 };
 
 const stripIpfsProtocol = (ipfsURI: ipfsURI) => ipfsURI.replace("ipfs://", "");
@@ -130,7 +130,7 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
     return URL.createObjectURL(panelImageBlob);
   };
 
-  const getPagePanelsData = async (page: Page): Promise<PagePanelsData[]> => {
+  const getPagePanelsData = async (page: Page): Promise<PanelData[]> => {
     const pagePanelsData = [];
     for (const panelTokenId of page.panelTokenIds) {
       const metadata = await getPanelMetadata(panelTokenId);

@@ -10,9 +10,21 @@ function Page(props: { pageData: Page }) {
     panelTokenIds: pageData.panelTokenIds,
   };
 
-  function toggleAuctionModal(event) {
-    console.log(event);
-  }
+  /**
+   * TODO:
+   *
+   * 1. use the PanelContext (see pages/Test.tsx for example)
+   * 2. store the pagePanelsData as state
+   * 3. use getPagePanelsData and then store the result in pagePanelsData state
+   * (if no pagePanelsData show a <Spinner>)
+   * 4. map over the pagePanelsData and render a <Panel data={panelData} /> for each one
+   *
+   * Panel is a new component (create in components/Panel.tsx then import here)
+   * - props: { data: PanelData }
+   * - it should render an <img src={data.imageSource} /> IF imageSource is not null
+   *
+   * discuss remaining steps
+   */
 
   const posts = [
     {
@@ -38,10 +50,10 @@ function Page(props: { pageData: Page }) {
       </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
         {posts.map((items, key) => (
+          // all of this can be the basis for the Panel component
           <article
             className="max-w-md mx-auto mt-4 bg-blue-800 shadow-lg border rounded-md duration-300 hover:shadow-sm"
             key={key}
-            onClick={(e) => toggleAuctionModal(key)}
           >
             <div className="filter opacity-100 hover:opacity-50 hover:red-500 duration-1000">
               <img
