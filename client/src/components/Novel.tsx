@@ -7,6 +7,7 @@ function Novel(props: any) {
       <Subheader
         title={props.title}
         author={props.author}
+        summary={props.summary}
       />
       <PageList />
     </>
