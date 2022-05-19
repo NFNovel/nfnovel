@@ -1,35 +1,40 @@
 /* eslint-disable @next/next/no-img-element */
-import { Button, Drawer, NumericInput, Position } from "@blueprintjs/core";
+import {
+  Button,
+  Drawer,
+  NumericInput,
+  Position,
+  Spinner,
+} from "@blueprintjs/core";
 import { BigNumber, ethers } from "ethers";
 import { useState, useContext, useEffect } from "react";
 import { NFNovelContext } from "src/contexts/nfnovel-context";
 import { DateTime, Duration } from "luxon";
+import { useInterval } from "src/utils/use-timers";
 
-export interface IAuction {
-  state: AuctionStates;
-  id: BigNumber;
-  tokenId: BigNumber;
-  startTime: BigNumber;
-  endTime: BigNumber;
-  startingValue: BigNumber;
-  minimumBidValue: BigNumber;
-  highestBid: BigNumber;
-  highestBidder: string;
-}
-
-export enum AuctionStates {
-  Pending,
-  Active,
-  Ended,
-  Cancelled,
-}
+import type { Auction } from "src/types/auction";
 
 function AuctionModal(props: any) {
   const [visible, setVisibility] = useState(false);
   const [bidInEth, setBidInEth] = useState(0);
   const [panelAuctionId, setPanelAuctionId] = useState<BigNumber>();
-  const [auction, setAuction] = useState<IAuction>();
+  const [auction, setAuction] = useState<Auction>();
   const [timeRemaining, setTimeRemaining] = useState<Duration>();
+
+  useInterval(
+    () => {
+      if (!auction) return;
+
+      setTimeRemaining(
+        DateTime.fromSeconds(auction.endTime.toNumber()).diffNow([
+          "seconds",
+          "hours",
+          "minutes",
+        ]),
+      );
+    },
+    visible ? 1000 : null,
+  );
 
   const {
     nfnovel, // novel contract instance
@@ -38,32 +43,15 @@ function AuctionModal(props: any) {
   const panelId = 1; // receive as a prop from modal call
 
   useEffect(() => {
-    const getPanelAuctionId = async () => {
+    const getPanelAuction = async () => {
       if (!nfnovel) return null;
       const panelAuctionId = await nfnovel.getPanelAuctionId(panelId);
       setAuction(await nfnovel.auctions(panelAuctionId));
       setPanelAuctionId(panelAuctionId);
     };
-    const updateTimeLeft = () => {
-      if (!auction) return;
-      console.log({
-        dateTime: DateTime.fromSeconds(auction.endTime.toNumber()).diffNow([
-          "seconds",
-        ]).seconds,
-        endTime: DateTime.fromSeconds(auction.endTime.toNumber()).toSeconds(),
-        current: Date.now(),
-      });
-      setTimeRemaining(
-        DateTime.fromSeconds(auction.endTime.toNumber()).diffNow([
-          "seconds",
-          "hours",
-          "minutes",
-        ]),
-      );
-    };
-    getPanelAuctionId();
-    updateTimeLeft();
-  }, [panelAuctionId, nfnovel, auction, timeRemaining]);
+
+    getPanelAuction();
+  }, [panelAuctionId, nfnovel, auction]);
 
   const visibleOn = () => {
     setVisibility(true);
@@ -95,7 +83,7 @@ function AuctionModal(props: any) {
         icon="info-sign"
         position={Position.BOTTOM}
         canEscapeKeyClose={true}
-        canOutsideClickClose={false}
+        canOutsideClickClose={true}
         enforceFocus={true}
         autoFocus={true}
         onClose={visibleOff}
@@ -135,13 +123,13 @@ function AuctionModal(props: any) {
           </div>
 
           <div className="bg-red-400 p-10 flex flex-col">
-            Time remaining!{" "}
+            Time remaining:{" "}
             <div>
-              {!timeRemaining ?
-                "HELLO WORLD" :
-                timeRemaining.toFormat(
-                  "hh 'hours', mm 'minutes', ss 'seconds'",
-                )}
+              {timeRemaining ? (
+                timeRemaining.toFormat("hh 'hours', mm 'minutes', ss 'seconds'")
+              ) : (
+                <Spinner />
+              )}
             </div>
           </div>
         </div>
