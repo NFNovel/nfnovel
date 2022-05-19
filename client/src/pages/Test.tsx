@@ -2,7 +2,7 @@ import { useContext, useState } from "react";
 import { Button } from "@blueprintjs/core";
 import { connectToMetamask } from "src/utils/connect-metamask";
 import { NFNovelContext } from "src/contexts/nfnovel-context";
-import { PagePanelsData, PanelContext } from "src/contexts/panel-context";
+import { PanelData, PanelContext } from "src/contexts/panel-context";
 import { Spinner } from "@blueprintjs/core";
 
 import type { NextPage } from "next";
@@ -18,7 +18,7 @@ const Test: NextPage = () => {
   const panelContext = useContext(PanelContext);
 
   const [imageSource, setImageSource] = useState<string | null>(null);
-  const [pagePanelsData, setpagePanelsData] = useState<PagePanelsData[] | null>(
+  const [pagePanelsData, setpagePanelsData] = useState<PanelData[] | null>(
     null,
   );
 

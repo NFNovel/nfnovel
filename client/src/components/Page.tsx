@@ -1,3 +1,9 @@
+/* eslint-disable @next/next/no-img-element */
+import { Spinner } from "@blueprintjs/core";
+import { useContext, useEffect, useState } from "react";
+import { NFNovelContext } from "src/contexts/nfnovel-context";
+import { PanelData, PanelContext } from "src/contexts/panel-context";
+
 import type { Page } from "src/types/page";
 
 function Page(props: { pageData: Page }) {
@@ -25,21 +31,33 @@ function Page(props: { pageData: Page }) {
    *
    * discuss remaining steps
    */
+  const { nfnovel } = useContext(NFNovelContext);
+  const panelContext = useContext(PanelContext);
 
-  const posts = [
-    {
-      img: "https://cdn.cnn.com/cnnnext/dam/assets/220114164903-spider-man-comic-book-auction-full-169.jpg",
-    },
-    {
-      img: "https://preview.redd.it/4rtq2979tvm71.gif?width=640&crop=smart&format=png8&s=a80ed59a9329c930f288bfed57f96f31534bd340",
-    },
-    {
-      img: "https://i.pinimg.com/originals/82/25/db/8225db331e7788cf6c02f7cbd7dec762.jpg",
-    },
-    {
-      img: "https://i0.wp.com/aiptcomics.com/wp-content/uploads/2020/06/zabufeat.jpg",
-    },
-  ];
+  const [pagePanelsData, setpagePanelsData] = useState<PanelData[] | null>(
+    null,
+  );
+
+  // NOTE: this should be on all pages...site is useless without these two
+
+  useEffect(() => {
+    // define a function that will call getPagePanelsData
+    async function loadPanelsData() {
+      if (!panelContext) return;
+
+      const { getPagePanelsData } = panelContext;
+
+      const panelsData = await getPagePanelsData(pageData);
+      setpagePanelsData(panelsData);
+    }
+
+    // call this function after defining it
+    loadPanelsData();
+  }, [pageData, panelContext]);
+
+  if (!nfnovel || !panelContext || !pagePanelsData) return <Spinner />;
+  // we want to load the pagePanelsData when the component mounts
+  // we will do this calling getPagePanelsData
 
   return (
     <section className="mt-12 relative overflow-hidden py-12 px-4 border border-gray-900 sm:px-8">
@@ -49,17 +67,19 @@ function Page(props: { pageData: Page }) {
           "Auction Ended"}
       </div>
       <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {posts.map((items, key) => (
+        {pagePanelsData.map((panelData, key) => (
           // all of this can be the basis for the Panel component
           <article
             className="max-w-md mx-auto mt-4 bg-blue-800 shadow-lg border rounded-md duration-300 hover:shadow-sm"
             key={key}
           >
             <div className="filter opacity-100 hover:opacity-50 hover:red-500 duration-1000">
-              <img
-                src={items.img}
-                className="w-full h-48 rounded-t-md"
-              />
+              {panelData.imageSource && (
+                <img
+                  src={panelData.imageSource}
+                  className="w-full h-48 rounded-t-md"
+                />
+              )}
             </div>
           </article>
         ))}
