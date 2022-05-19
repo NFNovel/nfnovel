@@ -38,8 +38,9 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
 
   const [ipfsClient, setIpfsClient] = useState<IPFS | null>(null);
 
-  const panelMetadata: Map<BigNumber | number, PanelMetadata> = new Map();
-  const panelImageSources: Map<BigNumber | number, string> = new Map();
+  // in-memory cache to speed things up after first load
+  const panelMetadataCache: Map<BigNumber | number, PanelMetadata> = new Map();
+  const panelImageSourceCache: Map<BigNumber | number, string> = new Map();
 
   useEffect(() => {
     const loadIpfsClient = async () => {
@@ -60,8 +61,8 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
   const getPanelMetadata = async (
     panelTokenId: BigNumber | number,
   ): Promise<PanelMetadata | null> => {
-    const storedMetadata = panelMetadata.get(panelTokenId);
-    if (storedMetadata) return storedMetadata;
+    const cachedMetadata = panelMetadataCache.get(panelTokenId);
+    if (cachedMetadata) return cachedMetadata;
 
     const panelTokenURI = await nfnovel
       .tokenURI(panelTokenId)
@@ -84,7 +85,7 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
 
     try {
       const panelTokenMetadata = JSON.parse(panelMetadataString);
-      panelMetadata.set(panelTokenId, panelTokenMetadata);
+      panelMetadataCache.set(panelTokenId, panelTokenMetadata);
 
       return panelTokenMetadata;
     } catch (error) {
@@ -97,8 +98,8 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
   const getPanelImageSource = async (
     panelTokenId: BigNumber | number,
   ): Promise<string | null> => {
-    const storedImageSource = panelImageSources.get(panelTokenId);
-    if (storedImageSource) return storedImageSource;
+    const cachedImageSource = panelImageSourceCache.get(panelTokenId);
+    if (cachedImageSource) return cachedImageSource;
 
     const panelTokenMetadata = await getPanelMetadata(panelTokenId);
     if (!panelTokenMetadata) return null;
@@ -117,7 +118,7 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
       console.log({ panelImageBase64 });
     }
 
-    panelImageSources.set(panelTokenId, panelImageBase64);
+    panelImageSourceCache.set(panelTokenId, panelImageBase64);
 
     return panelImageBase64;
   };
