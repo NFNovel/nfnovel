@@ -1,46 +1,45 @@
-import { useEffect, useState } from "react";
+import { useCallback, useContext, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import NFNovelDeployment from "@contracts/deployments/NFNovel.json";
-import abi from "@contracts/NFNovel/NFNovel.sol/NFNovel.json";
-import { ethers } from "ethers";
-
-import getContract from "../utils/get-contract";
+import { NFNovelContext } from "src/contexts/nfnovel-context";
 
 import Page from "./Page";
 
 function PageList() {
+  const { nfnovel } = useContext(NFNovelContext);
   const [pages, setPages]: any = useState([]);
 
   const [hasMore, setHasMore] = useState(true);
 
-  const NFNovelcontract: any = getContract(
-    abi.abi,
-    NFNovelDeployment.contractAddress,
+  const fetchPageData = useCallback(
+    async (pageNum: number) => {
+      if (!nfnovel) return;
+
+      nfnovel
+        .getPage(pageNum)
+        .then((pageData: any) => {
+          setPages([...pages, pageData]);
+        })
+        .catch((e: any) => {
+          // console.log(e);
+          console.log("setting hasMore(false)");
+          setHasMore(false);
+        });
+    },
+    [pages, nfnovel],
   );
 
-  const fetchPageData = (pageNum: number) => {
-    console.log("water")
-    NFNovelcontract.getPage(pageNum)
-      .then((pageData: any) => {
-        setPages([...pages, pageData]);
-      })
-      .catch((e: any) => {
-        console.log(e);
-        setHasMore(false);
-      });
-  };
-
   useEffect(() => {
-    fetchPageData(1);
-  }, []);
+    if (pages.length === 0) fetchPageData(1);
+  }, [hasMore, pages, fetchPageData]);
 
   return (
     <>
       <div className="bg-slate-100 px-6 min-h-screen">
-        
         <InfiniteScroll
           dataLength={pages.length}
-          next={() => fetchPageData(pages.length + 1)}
+          next={() => {
+            fetchPageData(pages.length + 1);
+          }}
           hasMore={hasMore}
           loader={
             <h4 className={"text-2xl ml-20 text-center mr-20 mt-10 mb-5"}>
@@ -52,6 +51,7 @@ function PageList() {
             <Page
               key={index}
               pageData={pageData}
+              // what is this prop used for?
               clickable={true}
             />
           ))}

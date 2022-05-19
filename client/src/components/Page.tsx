@@ -1,5 +1,3 @@
-import { ethers } from "ethers";
-
 function Page(props: any) {
   const pageData = props.pageData;
 
