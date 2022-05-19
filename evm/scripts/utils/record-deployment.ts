@@ -29,10 +29,7 @@ const recordDeployment: (
     ownerAddress,
     deployedAt: new Date().toISOString(),
     contractAddress: deployedContract.address,
-    network: {
-      chainId: network.chainId || "localhost",
-      name: network.name === "unknown" ? "localhost" : network.name,
-    },
+    network,
   };
 
   const dirPath = resolve(__dirname, `../../deployments`);
