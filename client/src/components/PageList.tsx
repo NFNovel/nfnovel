@@ -1,36 +1,55 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
+import NFNovelDeployment from "@contracts/deployments/NFNovel.json";
+import abi from "@contracts/NFNovel/NFNovel.sol/NFNovel.json";
+import { ethers } from "ethers";
+
+import getContract from "../utils/get-contract";
 
 import Page from "./Page";
 
 function PageList() {
-  const [pages, setPages] = useState([{ pageId: 1, panelIds: [1, 2] }]);
+  const [pages, setPages]: any = useState([]);
 
-  const fetchMoreData = () => {
-    setTimeout(() => {
-      setPages([
-        ...pages,
-        {
-          pageId: pages.length + 1,
-          panelIds: [1, 2, 3, 4],
-        },
-      ]);
-    }, 1500);
+  const [hasMore, setHasMore] = useState(true);
+
+  const NFNovelcontract: any = getContract(
+    abi.abi,
+    NFNovelDeployment.contractAddress,
+  );
+
+  const fetchPageData = (pageNum: number) => {
+    NFNovelcontract.getPage(pageNum)
+      .then((pageData: any) => {
+        setPages([...pages, pageData]);
+      })
+      .catch((e: any) => {
+        console.log(e);
+        setHasMore(false);
+      });
   };
+
+  useEffect(() => {
+    fetchPageData(1);
+  }, []);
 
   return (
     <>
-      <div className="bg-slate-100 mt-10 px-6 min-h-screen">
+      <div className="bg-slate-100 px-6 min-h-screen">
         <InfiniteScroll
           dataLength={pages.length}
-          next={fetchMoreData}
-          hasMore={true}
-          loader={<h4>Loading...</h4>}
+          next={() => fetchPageData(pages.length + 1)}
+          hasMore={hasMore}
+          loader={
+            <h4 className={"text-2xl ml-20 text-center mr-20 mt-10 mb-5"}>
+              Loading...
+            </h4>
+          }
         >
-          {pages.map((pageData, index) => (
+          {pages.map((pageData: any, index: number) => (
             <Page
               key={index}
-              {...pageData}
+              pageData={pageData}
               clickable={true}
             />
           ))}

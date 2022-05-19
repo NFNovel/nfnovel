@@ -11,7 +11,9 @@ const Home: NextPage = () => {
     <>
       <Header />
       <Novel
-        summary={"Summary of the novel"}
+        summary={
+          "Summary of the novel asidjfoasijdfo aijsdp ofijaspodifj pasodijf paosijdf poaisjdfp oiasjdfpoija sdpfoijas podifjspaodijf pasoijdf poaisjdfp oiasjdfpoi jaspdoifj aspodifj apsoidjf"
+        }
         title={"Some title for the novel"}
         author={"random_auth"}
         id={1}

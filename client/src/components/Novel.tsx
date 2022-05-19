@@ -2,7 +2,6 @@ import InfiniteScroll from "react-infinite-scroll-component";
 import { useEffect, useState } from "react";
 
 import Subheader from "./Subheader";
-import Board from "./Board";
 import PageList from "./PageList";
 
 function Novel(props: any) {
@@ -11,6 +10,7 @@ function Novel(props: any) {
       <Subheader
         title={props.title}
         author={props.author}
+        summary={props.summary}
       />
       <PageList />
     </>
