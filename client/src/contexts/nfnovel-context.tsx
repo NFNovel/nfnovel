@@ -30,18 +30,15 @@ export const NFNovelContext = createContext<INFNovelContext>({
 const WithNFNovel = (props: { children?: React.ReactNode }) => {
   const { children } = props;
 
+  const [nfnovel, setNfnovel] = useState<NFNovel | null>(null);
   const [connectedAccount, setConnectedAccount] = useState<IConnectedAccount | null>(null);
   const [metamaskProvider, setMetamaskProvider] = useState<Web3Provider | null>(
     null,
   );
-  const [nfnovel, setNfnovel] = useState<NFNovel>(
-    new Contract(
-      NFNovelDeployment.contractAddress,
-      NFNovelContract.abi,
-    ) as unknown as NFNovel,
-  );
 
   const connectContractToSigner = (connectedAccount: IConnectedAccount) => {
+    if (!nfnovel) return;
+
     setConnectedAccount(connectedAccount);
     setNfnovel(nfnovel.connect(connectedAccount.signer));
   };
@@ -56,11 +53,17 @@ const WithNFNovel = (props: { children?: React.ReactNode }) => {
       );
 
       setMetamaskProvider(provider);
-      setNfnovel(nfnovel.connect(provider));
+      setNfnovel(
+        new Contract(
+          NFNovelDeployment.contractAddress,
+          NFNovelContract.abi,
+          provider,
+        ) as unknown as NFNovel,
+      );
     };
 
     const loadPreConnectedAccount = async () => {
-      if (!metamaskProvider) return;
+      if (!metamaskProvider || !nfnovel) return;
 
       const accounts = await metamaskProvider.send("eth_accounts", []);
       if (accounts.length === 0) return;
