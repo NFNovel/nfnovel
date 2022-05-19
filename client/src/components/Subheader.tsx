@@ -58,7 +58,7 @@ function Subheader(props: any) {
 
         <div className="justify-center items-center flex">
           <button
-            onClick={() => handleClick()}
+            onClick={handleClick}
             className={"mb-3 text-nfnovels_text-darker hover:text-white"}
           >
             <svg
