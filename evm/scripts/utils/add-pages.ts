@@ -21,7 +21,7 @@ export const addPages = async (
     "ipfs://QmP8mkq6qHV6QnkBx4CjmDGLUmNHv8D56PmAZRYctjQcmb";
 
   const secondPageObscuredBaseURI =
-    "ipfs://QmTnweGmokYfrEPtjEgtrM4if6aGKUarTaWwJzy2VqRRqs";
+    "ipfs://QmY4oKsoD4V4uCeAg46rmVDdzGTTZq1sj7VMGSavnZWCqR";
 
   await contract.addPage(1, firstPageObscuredBaseURI);
   await contract.addPage(6, secondPageObscuredBaseURI);
