@@ -14,8 +14,10 @@
   },
   "dependencies": {
     "@heroicons/react": "^1.0.1",
+    "@next/swc-darwin-arm64": "^12.1.5",
     "axios": "^0.26.1",
     "ethers": "^5.6.4",
+    "ipfs-core": "^0.14.3",
     "next": "12.1.5",
     "next-connect": "^0.12.2",
     "nfnovel-dapp": "file:..",
