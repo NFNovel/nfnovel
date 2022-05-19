@@ -24,7 +24,7 @@ export const addPages = async (
     "ipfs://QmY4oKsoD4V4uCeAg46rmVDdzGTTZq1sj7VMGSavnZWCqR";
 
   await contract.addPage(1, firstPageObscuredBaseURI);
-  await contract.addPage(6, secondPageObscuredBaseURI);
+  await contract.addPage(5, secondPageObscuredBaseURI);
 
   const pageOne = await contract.getPage(1);
   const pageTwo = await contract.getPage(2);
