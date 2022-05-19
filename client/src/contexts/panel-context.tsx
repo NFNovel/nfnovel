@@ -1,5 +1,6 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { create as createIPFSClient } from "ipfs-core";
+import { Page } from "src/types/page";
 
 import { NFNovelContext } from "./nfnovel-context";
 
@@ -19,6 +20,11 @@ export type PanelMetadata = {
   }[];
 };
 
+export type PagePanelsData = {
+  metadata: PanelMetadata | null;
+  imageSource: string | null;
+};
+
 export type PanelContext = {
   getPanelMetadata: (
     panelTokenId: BigNumber | number,
@@ -26,6 +32,7 @@ export type PanelContext = {
   getPanelImageSource: (
     panelTokenId: BigNumber | number,
   ) => Promise<string | null>;
+  getPagePanelsData: (page: Page) => Promise<PagePanelsData[]>;
 };
 
 const stripIpfsProtocol = (ipfsURI: ipfsURI) => ipfsURI.replace("ipfs://", "");
@@ -38,54 +45,58 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
 
   const [ipfsClient, setIpfsClient] = useState<IPFS | null>(null);
 
-  // in-memory cache to speed things up after first load
-  const panelMetadataCache: Map<BigNumber | number, PanelMetadata> = new Map();
-  const panelImageSourceCache: Map<BigNumber | number, string> = new Map();
+  const [cachedTokenURI, setCachedTokenURI] = useState<
+  Map<BigNumber | number, string>
+  >(new Map());
 
   useEffect(() => {
     const loadIpfsClient = async () => {
-      setIpfsClient(
-        // await createIPFSClient({ repoOwner: true, repo: Date.now() + "" }),
-        await createIPFSClient(),
-      );
+      setIpfsClient(await createIPFSClient());
     };
 
     if (!ipfsClient) loadIpfsClient();
   }, [ipfsClient]);
 
-  if (!nfnovel || !ipfsClient)
+  if (!nfnovel || !ipfsClient) {
+    // THINK: render a Spinner if not available (during loading)
     return (
       <PanelContext.Provider value={null}>{children}</PanelContext.Provider>
     );
+  }
 
   const getPanelMetadata = async (
     panelTokenId: BigNumber | number,
   ): Promise<PanelMetadata | null> => {
-    const cachedMetadata = panelMetadataCache.get(panelTokenId);
-    if (cachedMetadata) return cachedMetadata;
+    const cachedPanelTokenURI = cachedTokenURI.get(panelTokenId);
 
-    const panelTokenURI = await nfnovel
-      .tokenURI(panelTokenId)
-      .catch((error) => {
+    const panelTokenURI = cachedPanelTokenURI ||
+      (await nfnovel.tokenURI(panelTokenId).catch((error) => {
         console.error("error loading panel token URI", error.message);
 
         return null;
-      });
+      }));
 
     if (!panelTokenURI) return null;
+    // store it in cache if it exists
+    cachedTokenURI.set(panelTokenId, panelTokenURI);
 
     let panelMetadataString = "";
-    for await (const panelMetadataChunk of ipfsClient.cat(
-      // NOTE: strip protocol to just get CID
-      stripIpfsProtocol(panelTokenURI as ipfsURI),
-      { timeout: 5 * 60 * 1000 },
-    )) {
-      panelMetadataString += Buffer.from(panelMetadataChunk).toString("utf-8");
+    try {
+      for await (const panelMetadataChunk of ipfsClient.cat(
+        // NOTE: strip protocol to just get CID
+        stripIpfsProtocol(panelTokenURI as ipfsURI),
+      )) {
+        panelMetadataString +=
+          Buffer.from(panelMetadataChunk).toString("utf-8");
+      }
+    } catch {
+      console.error("failed to load metadata for", { panelTokenId });
+
+      return null;
     }
 
     try {
       const panelTokenMetadata = JSON.parse(panelMetadataString);
-      panelMetadataCache.set(panelTokenId, panelTokenMetadata);
 
       return panelTokenMetadata;
     } catch (error) {
@@ -98,33 +109,42 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
   const getPanelImageSource = async (
     panelTokenId: BigNumber | number,
   ): Promise<string | null> => {
-    const cachedImageSource = panelImageSourceCache.get(panelTokenId);
-    if (cachedImageSource) return cachedImageSource;
-
     const panelTokenMetadata = await getPanelMetadata(panelTokenId);
     if (!panelTokenMetadata) return null;
 
-    console.log({
-      panelTokenId,
-      panelTokenMetadata,
-    });
+    let panelImageBlob = new Blob();
+    try {
+      for await (const panelImageChunk of ipfsClient.cat(
+        // NOTE: strip protocol to just get CID
+        stripIpfsProtocol(panelTokenMetadata.image),
+      )) {
+        panelImageBlob = new Blob([panelImageBlob, panelImageChunk]);
+      }
+    } catch {
+      console.error("failed to load panel image for", { panelTokenId });
 
-    let panelImageBase64 = "";
-    for await (const panelImageChunk of ipfsClient.cat(
-      // NOTE: strip protocol to just get CID
-      stripIpfsProtocol(panelTokenMetadata.image),
-    )) {
-      panelImageBase64 += Buffer.from(panelImageChunk).toString("base64");
-      console.log({ panelImageBase64 });
+      return null;
     }
 
-    panelImageSourceCache.set(panelTokenId, panelImageBase64);
+    // https://developer.mozilla.org/en-US/docs/Web/API/URL/createObjectURL
+    return URL.createObjectURL(panelImageBlob);
+  };
 
-    return panelImageBase64;
+  const getPagePanelsData = async (page: Page): Promise<PagePanelsData[]> => {
+    const pagePanelsData = [];
+    for (const panelTokenId of page.panelTokenIds) {
+      const metadata = await getPanelMetadata(panelTokenId);
+      const imageSource = await getPanelImageSource(panelTokenId);
+      pagePanelsData.push({ metadata, imageSource });
+    }
+
+    return pagePanelsData;
   };
 
   return (
-    <PanelContext.Provider value={{ getPanelMetadata, getPanelImageSource }}>
+    <PanelContext.Provider
+      value={{ getPanelMetadata, getPanelImageSource, getPagePanelsData }}
+    >
       {children}
     </PanelContext.Provider>
   );
