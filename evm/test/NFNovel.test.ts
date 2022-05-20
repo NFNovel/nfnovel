@@ -6,6 +6,7 @@ import {
   setPanelAuctionWinner,
   mintSinglePagePanel,
   mintMultiplePagePanels,
+  setBlockToAuctionEndTime,
 } from "./utils";
 import { expect } from "chai";
 import { OZ_INTERFACE_IDS } from "./constants";
@@ -441,6 +442,42 @@ describe("NFNovel", () => {
       it("returns true if all panels of the page have been sold", async () => {
         await mintMultiplePagePanels(nfnovelContract, bidder, panelTokenIds);
         expect(await nfnovelContract.isPageSold(pageNumber)).to.be.true;
+      });
+    });
+  });
+
+  describe("Panel Auctions", () => {
+    describe("placeBid", () => {
+      let nfnovelContract: NFNovel;
+      let auction: { id: BigNumber; endTime: BigNumber };
+
+      const panelsCount = 1;
+      const panelTokenId = 1;
+      const panelAuctionId = panelTokenId;
+      const obscuredBaseURI = "ipfs://obscured";
+
+      before(async () => {
+        nfnovelContract = await deployNFNovelTestContract(
+          owner,
+          "Mysterio",
+          "NFN-1"
+        );
+
+        await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
+        auction = await nfnovelContract.auctions(panelAuctionId);
+      });
+
+      context("reverts", () => {
+        it("with AuctionNoteActive if the auction end time has passed", async () => {
+          // simulate passing end time
+          await setBlockToAuctionEndTime(auction.endTime);
+
+          await expect(
+            nfnovelContract.placeBid(panelTokenId, {
+              value: ethers.constants.WeiPerEther.mul(1),
+            })
+          ).to.be.revertedWith("AuctionNotActive");
+        });
       });
     });
   });
