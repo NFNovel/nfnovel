@@ -212,9 +212,13 @@ describe("NFNovel", () => {
         );
       });
 
-      // NOTE: coupled to previous test (expects to be second page, second panel, second auction)
       it("with NotPanelAuctionWinner(panelAuctionId) if the caller is not the winner of the auction", async () => {
         const auctionDurationSeconds = 100;
+        const nfnovelContract = await deployNFNovelTestContract(
+          owner,
+          "Mysterio",
+          "NFN-1"
+        );
 
         await nfnovelContract.setAuctionDefaults({
           duration: auctionDurationSeconds,
@@ -222,22 +226,24 @@ describe("NFNovel", () => {
           startingValue: 0,
         });
 
-        await nfnovelContract.addPage(1, "secondPage");
+        await nfnovelContract.addPage(1, "firstPage");
 
-        await nfnovelContract.connect(bidder).placeBid(2, {
+        await nfnovelContract.connect(bidder).placeBid(1, {
           value: ethers.constants.WeiPerEther.mul(1),
         });
 
         await addBlockTime(auctionDurationSeconds);
 
+        console.log({ auction: await nfnovelContract.auctions(1) });
+
         // sanity check
         expect(bidderAddress).not.to.hexEqual(nonOwnerAddress);
 
-        await nfnovelContract.endPanelAuction(2);
+        await nfnovelContract.endPanelAuction(1);
 
         await expect(
-          nfnovelContract.connect(nonOwner).mintPanel(2)
-        ).to.be.revertedWith("NotPanelAuctionWinner(2)");
+          nfnovelContract.connect(nonOwner).mintPanel(1)
+        ).to.be.revertedWith("NotPanelAuctionWinner(1)");
       });
     });
 
@@ -455,6 +461,7 @@ describe("NFNovel", () => {
       const panelTokenId = 1;
       const panelAuctionId = panelTokenId;
       const obscuredBaseURI = "ipfs://obscured";
+      const auctionStartingValue = ethers.constants.WeiPerEther.mul(2);
 
       before(async () => {
         nfnovelContract = await deployNFNovelTestContract(
@@ -463,18 +470,35 @@ describe("NFNovel", () => {
           "NFN-1"
         );
 
+        // set a starting value
+        await nfnovelContract.setAuctionDefaults({
+          duration: 30,
+          startingValue: auctionStartingValue,
+          minimumBidValue: 0,
+        });
+
         await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
         auction = await nfnovelContract.auctions(panelAuctionId);
       });
 
       context("reverts", () => {
+        it("with BidBelowStartingValue if the bid is lower than the startingValue", () =>
+          expect(
+            nfnovelContract.placeBid(panelAuctionId, {
+              // set a value below starting value
+              value: auctionStartingValue.div(2),
+            })
+          ).to.be.revertedWith("BidBelowStartingValue"));
+
+        // NOTE: this test that speeds up block time must come after any that need an Active auction
         it("with AuctionNoteActive if the auction end time has passed", async () => {
           // simulate passing end time
           await setBlockToAuctionEndTime(auction.endTime);
 
           await expect(
             nfnovelContract.placeBid(panelTokenId, {
-              value: ethers.constants.WeiPerEther.mul(1),
+              // set a value above starting value
+              value: auctionStartingValue.mul(2),
             })
           ).to.be.revertedWith("AuctionNotActive");
         });
