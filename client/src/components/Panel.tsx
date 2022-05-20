@@ -24,17 +24,17 @@ const Panel = (props: PanelProps) => {
   const [auction, setAuction] = useState<Auction>();
   const [auctionIsOpen, setAuctionIsOpen] = useState<boolean>(false);
 
-  const getPanelAuction = useCallback(async () => {
-    if (!nfnovel) return null;
-    console.log("getPanelAuction called");
-
-    const panelAuctionId = await nfnovel.getPanelAuctionId(panelTokenId);
-    setAuction(await nfnovel.auctions(panelAuctionId));
-  }, [nfnovel, panelTokenId]);
-
   useEffect(() => {
+    const getPanelAuction = async () => {
+      if (!nfnovel) return null;
+      console.log("getPanelAuction called");
+
+      const panelAuctionId = await nfnovel.getPanelAuctionId(panelTokenId);
+      setAuction(await nfnovel.auctions(panelAuctionId));
+    };
+
     getPanelAuction();
-  }, [getPanelAuction]);
+  }, [nfnovel, panelTokenId]);
 
   const openAuctionModal = () => !auctionIsOpen && setAuctionIsOpen(true);
   const closeAuctionModal = () => auctionIsOpen && setAuctionIsOpen(false);
@@ -45,6 +45,8 @@ const Panel = (props: PanelProps) => {
   const handleBid = async (amountInWei: BigNumber) => {
     try {
       await nfnovel.placeBid(auction.id, { value: amountInWei });
+
+      setAuction(await nfnovel.auctions(auction.id));
 
       return true;
     } catch (error: any) {

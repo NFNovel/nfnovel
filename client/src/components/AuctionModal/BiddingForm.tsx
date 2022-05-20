@@ -67,7 +67,7 @@ const BiddingForm = (props: {
       bidInWei && (
         <Button
           className="p-5"
-          text={`Withdraw ${bidInWei.toString()}`}
+          text={`Withdraw ${ethers.utils.formatEther(bidInWei)}`}
           onClick={withdrawBid}
         />
       )
