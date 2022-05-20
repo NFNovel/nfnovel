@@ -25,6 +25,7 @@ library AuctionManagement {
 
     error BiddersBeforeStart();
     error BidBelowHighestBid();
+    error BidBelowStartingValue();
     error BidBelowMinimumIncrement();
 
     error NoBidToWithdraw();
@@ -82,19 +83,21 @@ library AuctionManagement {
     }
 
     function cancel(Auction storage auction) internal returns (bool) {
-        _confirmAuctionIsActive(auction);
         _endAuction(auction, AuctionStates.Cancelled);
 
         return auction.state == AuctionStates.Cancelled;
     }
 
     function end(Auction storage auction) internal returns (bool) {
-        _confirmAuctionIsActive(auction);
+        _endAuction(auction, AuctionStates.Ended);
 
         return auction.state == AuctionStates.Ended;
     }
 
     function withdraw(Auction storage auction) internal returns (bool) {
+        // BUG: this cant be correct logic
+        // also should we block withdrawals while the auction is active?
+        // THINK: just dont let the highest bidder pull out?
         if (
             auction.state == AuctionStates.Ended ||
             auction.state == AuctionStates.Cancelled
@@ -117,6 +120,8 @@ library AuctionManagement {
     function _endAuction(Auction storage auction, AuctionStates finalState)
         private
     {
+        if (auction.state != AuctionStates.Active) revert AuctionNotActive();
+
         auction.state = finalState;
 
         emit AuctionEnded(
@@ -127,16 +132,20 @@ library AuctionManagement {
     }
 
     function _confirmAuctionIsActive(Auction storage auction) private {
-        if (auction.state != AuctionStates.Active) revert AuctionNotActive();
-
-        if (block.timestamp > auction.endTime)
+        // check and end the auction (changing state to Ended) first
+        if (block.timestamp >= auction.endTime) {
             _endAuction(auction, AuctionStates.Ended);
+        }
+
+        // then check if it is still active
+        if (auction.state != AuctionStates.Active) revert AuctionNotActive();
     }
 
     function _validateBid(Auction storage auction, uint256 bidAmount)
         private
         view
     {
+        if (bidAmount <= auction.startingValue) revert BidBelowStartingValue();
         if (bidAmount <= auction.highestBid) revert BidBelowHighestBid();
         if (bidAmount < auction.highestBid + auction.minimumBidValue)
             revert BidBelowMinimumIncrement();

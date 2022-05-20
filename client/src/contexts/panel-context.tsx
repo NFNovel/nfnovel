@@ -6,23 +6,13 @@ import { NFNovelContext } from "./nfnovel-context";
 
 import type { IPFS } from "ipfs-core";
 import type { BigNumber } from "ethers";
+import type { PanelMetadata } from "src/types/token";
 
 export type ipfsURI = `ipfs://${string}`;
-
-export type PanelMetadata = {
-  name: string;
-  external_url: string;
-  description: string;
-  image: ipfsURI;
-  attributes: {
-    trait_type: "height" | "width" | "page" | "panel";
-    value: number | string | boolean;
-  }[];
-};
-
 export type PanelData = {
-  metadata: PanelMetadata | null;
   imageSource: string | null;
+  metadata: PanelMetadata | null;
+  panelTokenId: BigNumber | number;
 };
 
 export type PanelContext = {
@@ -135,7 +125,7 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
     for (const panelTokenId of page.panelTokenIds) {
       const metadata = await getPanelMetadata(panelTokenId);
       const imageSource = await getPanelImageSource(panelTokenId);
-      pagePanelsData.push({ metadata, imageSource });
+      pagePanelsData.push({ panelTokenId, metadata, imageSource });
     }
 
     return pagePanelsData;

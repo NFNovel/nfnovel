@@ -122,6 +122,11 @@ export const addBlockTime = async (
   await ethers.provider.send("evm_mine", [nextBlockTimestamp]);
 };
 
+export const setBlockToAuctionEndTime = async (
+  auctionEndTime: BigNumber
+): Promise<void> =>
+  addBlockTime(auctionEndTime.sub((await getCurrentBlock()).timestamp));
+
 export const setPanelAuctionHighestBidder = async (
   nfnovelContract: NFNovel,
   highestBidder: Signer,
