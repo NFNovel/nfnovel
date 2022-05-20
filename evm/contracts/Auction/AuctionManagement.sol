@@ -7,18 +7,6 @@ import "@openzeppelin/contracts/utils/Counters.sol";
 import "./structures.sol";
 
 library AuctionManagement {
-    event AuctionStarted(
-        uint256 auctionId,
-        uint256 tokenId,
-        uint256 startingValue,
-        uint256 endTime
-    );
-    event AuctionEnded(address winner, uint256 finalValue, string reason);
-    event AuctionCancelled();
-
-    event BidRaised(address highestBidder, uint256 highestBid);
-    event BidWithdrawn(address bidder, uint256 bid);
-
     error AuctionNotPending();
     error AuctionIsActive();
     error AuctionNotActive();
@@ -54,13 +42,6 @@ library AuctionManagement {
 
         auction.highestBid = 0;
         auction.highestBidder = address(0);
-
-        emit AuctionStarted(
-            auction.id,
-            auction.tokenId,
-            auction.startingValue,
-            auction.endTime
-        );
     }
 
     function bid(Auction storage auction) internal returns (bool) {
@@ -77,14 +58,11 @@ library AuctionManagement {
 
         auction.bids[msg.sender] += bidIncrement;
 
-        emit BidRaised(auction.highestBidder, auction.highestBid);
-
         return true;
     }
 
     function cancel(Auction storage auction) internal returns (bool) {
         _endAuction(auction, AuctionStates.Cancelled);
-
         return auction.state == AuctionStates.Cancelled;
     }
 
@@ -94,7 +72,7 @@ library AuctionManagement {
         return auction.state == AuctionStates.Ended;
     }
 
-    function withdraw(Auction storage auction) internal returns (bool) {
+    function withdraw(Auction storage auction) internal returns (address bidder, uint256 withdrawValue) {
         // BUG: this cant be correct logic
         // also should we block withdrawals while the auction is active?
         // THINK: just dont let the highest bidder pull out?
@@ -103,18 +81,14 @@ library AuctionManagement {
             auction.state == AuctionStates.Cancelled
         ) revert AuctionIsActive();
 
-        address bidder = msg.sender;
-        uint256 withdrawValue = auction.bids[bidder];
+        bidder = msg.sender;
+        withdrawValue = auction.bids[bidder];
 
         _validateWithdrawal(auction, bidder, withdrawValue);
 
         auction.bids[bidder] = 0;
 
         payable(bidder).transfer(withdrawValue);
-
-        emit BidWithdrawn(bidder, withdrawValue);
-
-        return true;
     }
 
     function _endAuction(Auction storage auction, AuctionStates finalState)
@@ -123,12 +97,6 @@ library AuctionManagement {
         if (auction.state != AuctionStates.Active) revert AuctionNotActive();
 
         auction.state = finalState;
-
-        emit AuctionEnded(
-            auction.highestBidder,
-            auction.highestBid,
-            finalState == AuctionStates.Ended ? "time" : "cancelled"
-        );
     }
 
     function _confirmAuctionIsActive(Auction storage auction) private {

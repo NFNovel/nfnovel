@@ -10,9 +10,21 @@ import "./AuctionManagement.sol";
 abstract contract Auctionable {
     using Counters for Counters.Counter;
     using AuctionManagement for Auction;
+    event AuctionStarted(
+        uint256 auctionId,
+        uint256 tokenId,
+        uint256 startingValue,
+        uint256 endTime
+    );
+    event AuctionEnded(uint256 auctionId, address winner, uint256 finalValue, string reason);
+    event AuctionCancelled(uint256 auctionId);
 
-    error AuctionNotFound();
+    event BidRaised(uint256 auctionId, address highestBidder, uint256 highestBid);
+    event BidWithdrawn(uint256 auctionId, address bidder, uint256 bid);
+
     event AuctionDefaultsUpdated(AuctionSettings newDefaults);
+    
+    error AuctionNotFound();
 
     Counters.Counter private _auctionIds;
 
@@ -35,17 +47,21 @@ abstract contract Auctionable {
         return _endTime - block.timestamp;
     }
 
-    function placeBid(uint256 auctionId) public payable returns (bool) {
-        return _getAuction(auctionId).bid();
+    function placeBid(uint256 auctionId) public payable returns (bool success) {
+        Auction storage auction = _getAuction(auctionId);
+        emit BidRaised(auction.id, auction.highestBidder, auction.highestBid);       
+        success = auction.bid();
     }
 
-    function withdrawBid(uint256 auctionId) public returns (bool) {
-        return _getAuction(auctionId).withdraw();
+    function withdrawBid(uint256 auctionId) public returns (bool success) {
+        Auction storage auction = _getAuction(auctionId);
+        (address bidder, uint256 withdrawValue) = auction.withdraw();
+        emit BidWithdrawn(auction.id, bidder, withdrawValue);
+        success = true;
     }
 
     function setAuctionDefaults(AuctionSettings calldata newDefaults) public {
         auctionDefaults = newDefaults;
-
         emit AuctionDefaultsUpdated(newDefaults);
     }
 
@@ -64,6 +80,14 @@ abstract contract Auctionable {
             auctionSettings.minimumBidValue
         );
 
+        emit AuctionStarted(
+            newAuction.id,
+            newAuction.tokenId,
+            newAuction.startingValue,
+            newAuction.endTime
+        );
+
+
         return newAuctionId;
     }
 
@@ -71,8 +95,15 @@ abstract contract Auctionable {
         return _startAuction(tokenId, auctionDefaults);
     }
 
-    function _endAuction(uint256 auctionId) internal returns (bool) {
-        return _getAuction(auctionId).end();
+    function _endAuction(uint256 auctionId) internal returns (bool success) {
+        Auction storage auction = _getAuction(auctionId);
+        success = auction.end();
+        emit AuctionEnded(
+            auction.id,
+            auction.highestBidder,
+            auction.highestBid,
+            auction.state == AuctionStates.Ended ? "time" : "cancelled"
+        );
     }
 
     function _cancelAuction(uint256 auctionId) internal returns (bool) {
