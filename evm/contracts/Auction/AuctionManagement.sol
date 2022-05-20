@@ -127,10 +127,13 @@ library AuctionManagement {
     }
 
     function _confirmAuctionIsActive(Auction storage auction) private {
-        if (auction.state != AuctionStates.Active) revert AuctionNotActive();
-
-        if (block.timestamp > auction.endTime)
+        // check and end the auction (changing state to Ended) first
+        if (block.timestamp >= auction.endTime) {
             _endAuction(auction, AuctionStates.Ended);
+        }
+
+        // then check if it is still active
+        if (auction.state != AuctionStates.Active) revert AuctionNotActive();
     }
 
     function _validateBid(Auction storage auction, uint256 bidAmount)
