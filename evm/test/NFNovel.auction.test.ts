@@ -29,6 +29,9 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
     const panelAuctionId = panelTokenId;
     const obscuredBaseURI = "ipfs://obscured";
     const auctionStartingValue = ethers.constants.WeiPerEther.mul(2);
+    const auctionMinimumBidIncrement = ethers.constants.WeiPerEther.mul(
+      BigNumber.from(ethers.utils.parseEther("0.001"))
+    );
 
     before(async () => {
       nfnovelContract = await deployNFNovelTestContract(
@@ -41,7 +44,7 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
       await nfnovelContract.setAuctionDefaults({
         duration: 30,
         startingValue: auctionStartingValue,
-        minimumBidIncrement: 0,
+        minimumBidIncrement: auctionMinimumBidIncrement,
       });
 
       await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
@@ -57,9 +60,14 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
           })
         ).to.be.revertedWith("BidBelowStartingValue"));
 
-      it(
-        "with BidBelowMinimumIncrement if the cumulative bid of the caller is below the highest bid + the minimum bid increment"
-      );
+      it("with BidBelowMinimumIncrement if the cumulative bid of the caller is below the highest bid + the minimum bid increment", async () => {
+        const bidToAdd = auctionStartingValue.add(1);
+        expect(bidToAdd).to.be.lte(auctionMinimumBidIncrement);
+
+        await expect(
+          nfnovelContract.addToBid(panelAuctionId, { value: bidToAdd })
+        ).to.be.revertedWith("BidBelowMinimumIncrement");
+      });
 
       // NOTE: this test that speeds up block time must come after any that need an Active auction
       it("with AuctionNoteActive if the auction end time has passed", async () => {
@@ -75,7 +83,7 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
       });
 
       it(
-        "with BidBelowHighestBid if the cumulative bid is below the highest bid"
+        "with BidBelowHighestBid if the cumulative bid is equal or below the highest bid"
       );
 
       context("successful call", () => {
@@ -83,7 +91,9 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
 
         it("sets the caller as the auction highest bidder");
 
-        it("emits a BidRaised() event");
+        it(
+          "emits a AuctionBidRaised(panelAuctionId, highestBidder, highestBid) event"
+        );
       });
     });
   });
@@ -182,12 +192,12 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
         );
       });
 
-      it("emits a BidWithdrawn(panelAuctionId, bidder, withdrawValue) event", () =>
+      it("emits a AuctionBidWithdrawn(panelAuctionId, bidder, withdrawValue) event", () =>
         expect(transaction)
           .to.emit(
             nfnovelContract,
             nfnovelContract.interface.events[
-              "BidWithdrawn(uint256,address,uint256)"
+              "AuctionBidWithdrawn(uint256,address,uint256)"
             ].name
           )
           .withArgs(panelAuctionId, nonHighestBidderAddress, nonHighestBidWei));
