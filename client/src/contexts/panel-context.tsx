@@ -1,11 +1,11 @@
 import { createContext, useContext, useEffect, useState } from "react";
 import { create as createIPFSClient } from "ipfs-core";
 import { Page } from "src/types/page";
+import { BigNumber } from "ethers";
 
 import { NFNovelContext } from "./nfnovel-context";
 
 import type { IPFS } from "ipfs-core";
-import type { BigNumber } from "ethers";
 import type { PanelMetadata } from "src/types/token";
 
 export type ipfsURI = `ipfs://${string}`;
@@ -35,9 +35,7 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
 
   const [ipfsClient, setIpfsClient] = useState<IPFS | null>(null);
 
-  const [cachedTokenURI, setCachedTokenURI] = useState<
-  Map<BigNumber | number, string>
-  >(new Map());
+  const cachedTokenURIs = new Map<BigNumber | number, string>();
 
   useEffect(() => {
     const loadIpfsClient = async () => {
@@ -57,7 +55,7 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
   const getPanelMetadata = async (
     panelTokenId: BigNumber | number,
   ): Promise<PanelMetadata | null> => {
-    const cachedPanelTokenURI = cachedTokenURI.get(panelTokenId);
+    const cachedPanelTokenURI = cachedTokenURIs.get(panelTokenId);
 
     const panelTokenURI = cachedPanelTokenURI ||
       (await nfnovel.tokenURI(panelTokenId).catch((error) => {
@@ -68,7 +66,7 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
 
     if (!panelTokenURI) return null;
     // store it in cache if it exists
-    cachedTokenURI.set(panelTokenId, panelTokenURI);
+    cachedTokenURIs.set(panelTokenId, panelTokenURI);
 
     let panelMetadataString = "";
     try {

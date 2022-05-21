@@ -24,7 +24,9 @@ const BiddingForm = (props: {
     connectContractToSigner
   } = useContext(NFNovelContext);
 
+  // NOTE: this should not be bidInWei, this should represent the amount to ADD to the bid
   const [bidInWei, setBidInWei] = useState(BigNumber.from(0));
+  const [currentBid, setCurrentBid] = useState<BigNumber>();
 
   const handleBidInEth = (bidInEthNumber: number, bidInEthString: string) => {
     // reject 0, negative or "." (invalid) values
@@ -34,8 +36,17 @@ const BiddingForm = (props: {
     setBidInWei(ethers.utils.parseEther(bidInEthString));
   };
 
+  // NOTE: should call checkBid and setCurrentBid on component load (should only trigger one time)
+
   const addToBid = async () => {
     const success = await onAddToBid(bidInWei);
+
+    // NOTE: update based on on-chain data
+    if (success) {
+      // call checkBid
+      // setCurrentBid to checkBid result
+    }
+
     // indicate success/failure
   };
 
@@ -52,6 +63,35 @@ const BiddingForm = (props: {
 
   if (!metamaskProvider) return null;
 
+  /**
+   * 
+   * 
+   * 
+[currentBid] | [addToBid input] | [total bid (currentBid + addToBid input value)]
+[withdraw bid {currentBid}] | [placeBid]
+
+[addToBid input]:
+- min (minimum input): highestBid + minimumBidIncrement
+- stepSize: minimumBidIncrement
+- value: highestBid + minimumBidIncrement
+  - when component renders set bidInWei to  (highestBid + minimumBidIncrement)
+  - after submitting bid set (highestBid + minimumBidIncrement) 
+- auction.minimumBidIncrement
+
+[withdraw bid button]:
+- disabled if connectedAccount.address == highestBidder
+- disabled if their currentBid is 0
+- button text should be `Withdraw ${currentBid}`
+
+when the auction ends:
+
+- if connectedAccount.address == highestBidder then present [mint panel button] => mintPanel(panelTokenId)
+- if not then present [withdraw button]
+- so (remove the add to bid input/button)
+   * 
+   * 
+   */
+
   if (!connectedAccount)
     return (
       <Button
@@ -62,6 +102,9 @@ const BiddingForm = (props: {
       />
     );
 
+  // NOTE: refactor this
+  // should use checkBid result not bidInWei
+  // because bidInWei is only in state, checkBid is current from on-chain data
   if (auction.state !== 1)
     return (
       bidInWei && (

@@ -27,7 +27,6 @@ const Panel = (props: PanelProps) => {
   useEffect(() => {
     const getPanelAuction = async () => {
       if (!nfnovel) return null;
-      console.log("getPanelAuction called");
 
       const panelAuctionId = await nfnovel.getPanelAuctionId(panelTokenId);
       setAuction(await nfnovel.auctions(panelAuctionId));
@@ -60,6 +59,19 @@ const Panel = (props: PanelProps) => {
     }
   };
 
+  // TODO: implement calling withdrawBid on nfnovel
+  const handleWithdrawBid = async () => {
+    return true;
+  };
+
+  // TODO: implement calling mintPanel on nfnovel
+  const handleMintPanel = async () => {
+    return true;
+  };
+
+  // TODO: render the mintPanel button if
+  // auction.state == 2 (Ended) && connectedAccount.address == auction.highestBidder && ownerOf(panelTokenId) == address(0)
+
   return (
     <article className="max-w-md mx-auto mt-4 bg-blue-800 shadow-lg border rounded-md duration-300 hover:shadow-sm">
       <div className="filter opacity-100 hover:opacity-50 hover:red-500 duration-1000">
@@ -75,6 +87,7 @@ const Panel = (props: PanelProps) => {
             metadata={metadata}
             hasConnectedAccount={!!connectedAccount}
             onAddToBid={handleAddToBid}
+            onWithdrawBid={handleWithdrawBid}
             onClose={closeAuctionModal}
           />
         </Button>
