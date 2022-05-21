@@ -453,34 +453,48 @@ describe("NFNovel", () => {
   });
 
   describe("Panel Auctions", () => {
-    describe("placeBid", () => {
-      let nfnovelContract: NFNovel;
-      let auction: { id: BigNumber; endTime: BigNumber };
+    let nfnovelContract: NFNovel;
+    let auction: { id: BigNumber; endTime: BigNumber };
 
-      const panelsCount = 1;
-      const panelTokenId = 1;
-      const panelAuctionId = panelTokenId;
-      const obscuredBaseURI = "ipfs://obscured";
-      const auctionStartingValue = ethers.constants.WeiPerEther.mul(2);
+    const panelsCount = 1;
+    const panelTokenId = 1;
+    const panelAuctionId = panelTokenId;
+    const obscuredBaseURI = "ipfs://obscured";
+    const auctionStartingValue = ethers.constants.WeiPerEther.mul(2);
 
-      before(async () => {
-        nfnovelContract = await deployNFNovelTestContract(
-          owner,
-          "Mysterio",
-          "NFN-1"
-        );
+    before(async () => {
+      nfnovelContract = await deployNFNovelTestContract(
+        owner,
+        "Mysterio",
+        "NFN-1"
+      );
 
-        // set a starting value
-        await nfnovelContract.setAuctionDefaults({
-          duration: 30,
-          startingValue: auctionStartingValue,
-          minimumBidValue: 0,
-        });
-
-        await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
-        auction = await nfnovelContract.auctions(panelAuctionId);
+      // set a starting value
+      await nfnovelContract.setAuctionDefaults({
+        duration: 30,
+        startingValue: auctionStartingValue,
+        minimumBidValue: 0,
       });
 
+      await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
+      auction = await nfnovelContract.auctions(panelAuctionId);
+    });
+
+    context("withdraws", () => {
+      context("reverts", () => {
+        it("with NoBidToWithdraw if there are no bids", async () => {
+          expect(await nfnovelContract.checkBid(panelAuctionId)).to.eq(
+            BigNumber.from(0)
+          );
+
+          expect(nfnovelContract.withdrawBid(panelAuctionId)).revertedWith(
+            "NoBidToWithdraw"
+          );
+        });
+      });
+    });
+
+    describe("placeBid", () => {
       context("reverts", () => {
         it("with BidBelowStartingValue if the bid is lower than the startingValue", () =>
           expect(

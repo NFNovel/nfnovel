@@ -61,6 +61,10 @@ library AuctionManagement {
         return true;
     }
 
+    function checkBid(Auction storage auction) internal view returns (uint256 bidAmount){
+        return auction.bids[msg.sender];  
+    }
+
     function cancel(Auction storage auction) internal returns (bool) {
         _endAuction(auction, AuctionStates.Cancelled);
         return auction.state == AuctionStates.Cancelled;

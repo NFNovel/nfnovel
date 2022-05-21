@@ -53,6 +53,11 @@ abstract contract Auctionable {
         success = auction.bid();
     }
 
+    function checkBid(uint256 auctionId) public view returns (uint256 bidAmount){
+        Auction storage auction = _getAuction(auctionId);
+        return auction.checkBid();
+    }
+
     function withdrawBid(uint256 auctionId) public returns (bool success) {
         Auction storage auction = _getAuction(auctionId);
         (address bidder, uint256 withdrawValue) = auction.withdraw();
