@@ -583,5 +583,37 @@ describe("NFNovel", () => {
         });
       });
     });
+
+    describe("view functions", () => {
+      describe("checkBid", () => {
+        let nfnovelContract: NFNovel;
+        before(async () => {
+          nfnovelContract = await deployNFNovelTestContract(
+            owner,
+            "title",
+            "SYM"
+          );
+
+          await nfnovelContract.addPage(1, "");
+        });
+
+        // in this one check with no bids placed
+        it("returns 0 if the caller does not have any bid value in the auction", async () =>
+          expect(await nfnovelContract.checkBid(1)).to.eq(0));
+
+        // NOTE: coupled to previous test (must come after 0 expected bid value)
+        it("returns the current bid value of the caller", async () => {
+          const bidAmountWei = ethers.constants.WeiPerEther.mul(2);
+
+          await nfnovelContract
+            .connect(bidder)
+            .placeBid(1, { value: bidAmountWei });
+
+          expect(await nfnovelContract.connect(bidder).checkBid(1)).to.eq(
+            bidAmountWei
+          );
+        });
+      });
+    });
   });
 });
