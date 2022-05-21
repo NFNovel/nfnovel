@@ -15,7 +15,7 @@ struct Auction {
     uint256 startTime;
     uint256 endTime;
     uint256 startingValue;
-    uint256 minimumBidValue;
+    uint256 minimumBidIncrement;
     uint256 highestBid;
     address highestBidder;
     mapping(address => uint256) bids;
@@ -24,5 +24,5 @@ struct Auction {
 struct AuctionSettings {
     uint256 duration;
     uint256 startingValue;
-    uint256 minimumBidValue;
+    uint256 minimumBidIncrement;
 }

@@ -25,7 +25,7 @@ library AuctionManagement {
         uint256 tokenId,
         uint256 auctionDuration,
         uint256 startingValue,
-        uint256 minimumBidValue
+        uint256 minimumBidIncrement
     ) internal {
         if (auction.state != AuctionStates.Pending) revert AuctionNotPending();
 
@@ -38,13 +38,13 @@ library AuctionManagement {
         auction.endTime = block.timestamp + auctionDuration;
 
         auction.startingValue = startingValue;
-        auction.minimumBidValue = minimumBidValue;
+        auction.minimumBidIncrement = minimumBidIncrement;
 
-        auction.highestBid = 0;
+        auction.highestBid = startingValue;
         auction.highestBidder = address(0);
     }
 
-    function bid(Auction storage auction) internal returns (bool) {
+    function addToBid(Auction storage auction) internal returns (bool) {
         _confirmAuctionIsActive(auction);
 
         uint256 bidIncrement = msg.value;
@@ -61,6 +61,14 @@ library AuctionManagement {
         return true;
     }
 
+    function checkBid(Auction storage auction)
+        internal
+        view
+        returns (uint256 currentBid)
+    {
+        currentBid = auction.bids[msg.sender];
+    }
+
     function cancel(Auction storage auction) internal returns (bool) {
         _endAuction(auction, AuctionStates.Cancelled);
         return auction.state == AuctionStates.Cancelled;
@@ -72,15 +80,10 @@ library AuctionManagement {
         return auction.state == AuctionStates.Ended;
     }
 
-    function withdraw(Auction storage auction) internal returns (address bidder, uint256 withdrawValue) {
-        // BUG: this cant be correct logic
-        // also should we block withdrawals while the auction is active?
-        // THINK: just dont let the highest bidder pull out?
-        if (
-            auction.state == AuctionStates.Ended ||
-            auction.state == AuctionStates.Cancelled
-        ) revert AuctionIsActive();
-
+    function withdraw(Auction storage auction)
+        internal
+        returns (address bidder, uint256 withdrawValue)
+    {
         bidder = msg.sender;
         withdrawValue = auction.bids[bidder];
 
@@ -115,7 +118,7 @@ library AuctionManagement {
     {
         if (bidAmount <= auction.startingValue) revert BidBelowStartingValue();
         if (bidAmount <= auction.highestBid) revert BidBelowHighestBid();
-        if (bidAmount < auction.highestBid + auction.minimumBidValue)
+        if (bidAmount < auction.highestBid + auction.minimumBidIncrement)
             revert BidBelowMinimumIncrement();
     }
 

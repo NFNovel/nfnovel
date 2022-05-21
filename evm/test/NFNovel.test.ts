@@ -6,7 +6,6 @@ import {
   setPanelAuctionWinner,
   mintSinglePagePanel,
   mintMultiplePagePanels,
-  setBlockToAuctionEndTime,
 } from "./utils";
 import { expect } from "chai";
 import { OZ_INTERFACE_IDS } from "./constants";
@@ -222,19 +221,17 @@ describe("NFNovel", () => {
 
         await nfnovelContract.setAuctionDefaults({
           duration: auctionDurationSeconds,
-          minimumBidValue: 0,
+          minimumBidIncrement: 0,
           startingValue: 0,
         });
 
         await nfnovelContract.addPage(1, "firstPage");
 
-        await nfnovelContract.connect(bidder).placeBid(1, {
+        await nfnovelContract.connect(bidder).addToBid(1, {
           value: ethers.constants.WeiPerEther.mul(1),
         });
 
         await addBlockTime(auctionDurationSeconds);
-
-        console.log({ auction: await nfnovelContract.auctions(1) });
 
         // sanity check
         expect(bidderAddress).not.to.hexEqual(nonOwnerAddress);
@@ -448,60 +445,6 @@ describe("NFNovel", () => {
       it("returns true if all panels of the page have been sold", async () => {
         await mintMultiplePagePanels(nfnovelContract, bidder, panelTokenIds);
         expect(await nfnovelContract.isPageSold(pageNumber)).to.be.true;
-      });
-    });
-  });
-
-  describe("Panel Auctions", () => {
-    describe("placeBid", () => {
-      let nfnovelContract: NFNovel;
-      let auction: { id: BigNumber; endTime: BigNumber };
-
-      const panelsCount = 1;
-      const panelTokenId = 1;
-      const panelAuctionId = panelTokenId;
-      const obscuredBaseURI = "ipfs://obscured";
-      const auctionStartingValue = ethers.constants.WeiPerEther.mul(2);
-
-      before(async () => {
-        nfnovelContract = await deployNFNovelTestContract(
-          owner,
-          "Mysterio",
-          "NFN-1"
-        );
-
-        // set a starting value
-        await nfnovelContract.setAuctionDefaults({
-          duration: 30,
-          startingValue: auctionStartingValue,
-          minimumBidValue: 0,
-        });
-
-        await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
-        auction = await nfnovelContract.auctions(panelAuctionId);
-      });
-
-      context("reverts", () => {
-        it("with BidBelowStartingValue if the bid is lower than the startingValue", () =>
-          expect(
-            nfnovelContract.placeBid(panelAuctionId, {
-              // set a value below starting value
-              value: auctionStartingValue.div(2),
-            })
-          ).to.be.revertedWith("BidBelowStartingValue"));
-
-        // NOTE: this test that speeds up block time must come after any that need an Active auction
-        it("with AuctionNoteActive if the auction end time has passed", async () => {
-          // simulate passing end time
-          await setBlockToAuctionEndTime(auction.endTime);
-
-          await expect(
-            nfnovelContract.placeBid(panelTokenId, {
-              // set a value above starting value
-              value: auctionStartingValue.mul(2),
-            })
-          ).to.be.revertedWith("AuctionNotActive");
-        });
       });
     });
   });

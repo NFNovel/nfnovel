@@ -9,12 +9,12 @@ import type { Auction } from "src/types/auction";
 
 const BiddingForm = (props: {
   auction: Auction;
-  onPlaceBid: AuctionModalProps["onPlaceBid"];
+  onAddToBid: AuctionModalProps["onAddToBid"];
   onWithdrawBid: AuctionModalProps["onWithdrawBid"];
 }) => {
   const {
     auction,
-    onPlaceBid,
+    onAddToBid,
     onWithdrawBid
   } = props;
 
@@ -34,8 +34,8 @@ const BiddingForm = (props: {
     setBidInWei(ethers.utils.parseEther(bidInEthString));
   };
 
-  const placeBid = async () => {
-    const success = await onPlaceBid(bidInWei);
+  const addToBid = async () => {
+    const success = await onAddToBid(bidInWei);
     // indicate success/failure
   };
 
@@ -87,7 +87,7 @@ const BiddingForm = (props: {
       <Button
         className="p-5"
         text="Place Bid"
-        onClick={placeBid}
+        onClick={addToBid}
         disabled={auction.state !== 1}
       />
     </div>
