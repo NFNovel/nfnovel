@@ -27,13 +27,13 @@ abstract contract Auctionable {
 
     event AuctionCancelled(uint256 auctionId);
 
-    event BidRaised(
+    event AuctionBidRaised(
         uint256 auctionId,
         address highestBidder,
         uint256 highestBid
     );
 
-    event BidWithdrawn(uint256 auctionId, address bidder, uint256 bid);
+    event AuctionBidWithdrawn(uint256 auctionId, address bidder, uint256 bid);
 
     event AuctionDefaultsUpdated(AuctionSettings newDefaults);
 
@@ -62,7 +62,11 @@ abstract contract Auctionable {
 
     function addToBid(uint256 auctionId) public payable returns (bool success) {
         Auction storage auction = _getAuction(auctionId);
-        emit BidRaised(auction.id, auction.highestBidder, auction.highestBid);
+        emit AuctionBidRaised(
+            auction.id,
+            auction.highestBidder,
+            auction.highestBid
+        );
         success = auction.addToBid();
     }
 
@@ -77,7 +81,7 @@ abstract contract Auctionable {
     function withdrawBid(uint256 auctionId) public returns (bool success) {
         Auction storage auction = _getAuction(auctionId);
         (address bidder, uint256 withdrawValue) = auction.withdraw();
-        emit BidWithdrawn(auction.id, bidder, withdrawValue);
+        emit AuctionBidWithdrawn(auction.id, bidder, withdrawValue);
         success = true;
     }
 

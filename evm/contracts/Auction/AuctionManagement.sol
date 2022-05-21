@@ -40,7 +40,7 @@ library AuctionManagement {
         auction.startingValue = startingValue;
         auction.minimumBidIncrement = minimumBidIncrement;
 
-        auction.highestBid = 0;
+        auction.highestBid = startingValue;
         auction.highestBidder = address(0);
     }
 
