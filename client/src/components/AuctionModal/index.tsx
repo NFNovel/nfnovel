@@ -19,6 +19,7 @@ export type AuctionModalProps = {
   onAddToBid: (amountInWei: BigNumber) => Promise<boolean>;
   onWithdrawBid: (amountInWei: BigNumber) => Promise<boolean>;
   onClose: () => void;
+  getCurrentBid: () => Promise<BigNumber>;
 };
 
 function AuctionModal(props: AuctionModalProps) {
@@ -30,6 +31,7 @@ function AuctionModal(props: AuctionModalProps) {
     onClose,
     onAddToBid,
     onWithdrawBid,
+    getCurrentBid,
   } = props;
 
   const { connectedAccount } = useContext(NFNovelContext);
@@ -68,6 +70,7 @@ function AuctionModal(props: AuctionModalProps) {
             auction={auction}
             onAddToBid={onAddToBid}
             onWithdrawBid={onWithdrawBid}
+            getCurrentBid={getCurrentBid}
           />
         </div>
         <RemainingTime

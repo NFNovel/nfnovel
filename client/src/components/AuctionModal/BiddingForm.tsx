@@ -3,6 +3,7 @@ import { BigNumber, ethers } from "ethers";
 import { useContext, useState } from "react";
 import { NFNovelContext } from "src/contexts/nfnovel-context";
 import { connectToMetamask } from "src/utils/connect-metamask";
+import { useEffect } from "react";
 
 import type { AuctionModalProps } from ".";
 import type { Auction } from "src/types/auction";
@@ -11,11 +12,13 @@ const BiddingForm = (props: {
   auction: Auction;
   onAddToBid: AuctionModalProps["onAddToBid"];
   onWithdrawBid: AuctionModalProps["onWithdrawBid"];
+  getCurrentBid: AuctionModalProps["getCurrentBid"];
 }) => {
   const {
     auction,
     onAddToBid,
-    onWithdrawBid
+    onWithdrawBid,
+    getCurrentBid
   } = props;
 
   const {
@@ -28,12 +31,24 @@ const BiddingForm = (props: {
   const [bidInWei, setBidInWei] = useState(BigNumber.from(0));
   const [currentBid, setCurrentBid] = useState<BigNumber>();
 
+  useEffect(() => {
+    const handleCurrentBid = async () => {
+      setCurrentBid(await getCurrentBid());
+    };
+
+    handleCurrentBid();
+  }, [getCurrentBid, bidInWei]);
+
   const handleBidInEth = (bidInEthNumber: number, bidInEthString: string) => {
-    // reject 0, negative or "." (invalid) values
-    if (isNaN(bidInEthNumber) || bidInEthNumber <= 0) return;
+    // reject negative or "." (invalid) values
+    if (isNaN(bidInEthNumber) || bidInEthNumber < 0) return;
+
+    // if remaining value is 0 still setBidInWei (needed for last Total Bid update)
+    bidInEthNumber == 0 ?
+      setBidInWei(BigNumber.from(0)) :
+      setBidInWei(ethers.utils.parseEther(bidInEthString));
 
     // https://docs.ethers.io/v5/api/utils/display-logic/#display-logic--units
-    setBidInWei(ethers.utils.parseEther(bidInEthString));
   };
 
   // NOTE: should call checkBid and setCurrentBid on component load (should only trigger one time)
@@ -64,33 +79,33 @@ const BiddingForm = (props: {
   if (!metamaskProvider) return null;
 
   /**
-   * 
-   * 
-   * 
-[currentBid] | [addToBid input] | [total bid (currentBid + addToBid input value)]
-[withdraw bid {currentBid}] | [placeBid]
+       * 
+       * 
+       * 
+    [currentBid] | [addToBid input] | [total bid (currentBid + addToBid input value)]
+    [withdraw bid {currentBid}] | [placeBid]
 
-[addToBid input]:
-- min (minimum input): highestBid + minimumBidIncrement
-- stepSize: minimumBidIncrement
-- value: highestBid + minimumBidIncrement
-  - when component renders set bidInWei to  (highestBid + minimumBidIncrement)
-  - after submitting bid set (highestBid + minimumBidIncrement) 
-- auction.minimumBidIncrement
+    [addToBid input]:
+    - min (minimum input): highestBid + minimumBidIncrement
+    - stepSize: minimumBidIncrement
+    - value: highestBid + minimumBidIncrement
+      - when component renders set bidInWei to  (highestBid + minimumBidIncrement)
+      - after submitting bid set (highestBid + minimumBidIncrement) 
+    - auction.minimumBidIncrement
 
-[withdraw bid button]:
-- disabled if connectedAccount.address == highestBidder
-- disabled if their currentBid is 0
-- button text should be `Withdraw ${currentBid}`
+    [withdraw bid button]:
+    - disabled if connectedAccount.address == highestBidder
+    - disabled if their currentBid is 0
+    - button text should be `Withdraw ${currentBid}`
 
-when the auction ends:
+    when the auction ends:
 
-- if connectedAccount.address == highestBidder then present [mint panel button] => mintPanel(panelTokenId)
-- if not then present [withdraw button]
-- so (remove the add to bid input/button)
-   * 
-   * 
-   */
+    - if connectedAccount.address == highestBidder then present [mint panel button] => mintPanel(panelTokenId)
+    - if not then present [withdraw button]
+    - so (remove the add to bid input/button)
+      * 
+      * 
+      */
 
   if (!connectedAccount)
     return (
@@ -116,20 +131,42 @@ when the auction ends:
       )
     );
 
+  const handleTotalBid = () => {
+    return currentBid && ethers.utils.formatEther(currentBid?.add(bidInWei));
+  };
+
   return (
     <div className="p-5 flex flex-wrap flex-col">
-      <div>Place your Bid: </div>
-      <NumericInput
-        placeholder="Enter a number..."
-        majorStepSize={0.1}
-        min={0}
-        stepSize={0.1}
-        allowNumericCharactersOnly={true}
-        onValueChange={handleBidInEth}
-      />
+      <div className="p-5 flex flex-wrap flex-row">
+        <div className="mx-4">
+          Current Bid:{" "}
+          {currentBid ? ethers.utils.formatEther(currentBid) : null}
+          <span> </span> ETH
+        </div>
+        <div className="mx-4">Add to your bid: </div>
+        <NumericInput
+          placeholder="Enter a number..."
+          majorStepSize={0.1}
+          min={0}
+          stepSize={0.1}
+          allowNumericCharactersOnly={true}
+          onValueChange={handleBidInEth}
+        />
+        <div className="mx-4">
+          Total Bid: {currentBid ? handleTotalBid()?.toString() : null}
+        </div>
+      </div>
+
       <Button
         className="p-5"
         text="Place Bid"
+        onClick={addToBid}
+        disabled={auction.state !== 1}
+      />
+
+      <Button
+        className="p-5"
+        text="Withdraw bid"
         onClick={addToBid}
         disabled={auction.state !== 1}
       />
