@@ -42,15 +42,15 @@ const Panel = (props: PanelProps) => {
   if (!imageSource || !metadata) return null;
   if (!nfnovel || !auction) return <Spinner />;
 
-  const handleBid = async (amountInWei: BigNumber) => {
+  const handleAddToBid = async (amountInWei: BigNumber) => {
     try {
-      await nfnovel.placeBid(auction.id, { value: amountInWei });
+      await nfnovel.addToBid(auction.id, { value: amountInWei });
 
       setAuction(await nfnovel.auctions(auction.id));
 
       return true;
     } catch (error: any) {
-      console.error("placeBid failed", {
+      console.error("addToBid failed", {
         panelTokenId,
         panelAuctionId: auction.id,
         error: error,
@@ -74,7 +74,7 @@ const Panel = (props: PanelProps) => {
             isOpen={auctionIsOpen}
             metadata={metadata}
             hasConnectedAccount={!!connectedAccount}
-            onPlaceBid={handleBid}
+            onAddToBid={handleAddToBid}
             onClose={closeAuctionModal}
           />
         </Button>

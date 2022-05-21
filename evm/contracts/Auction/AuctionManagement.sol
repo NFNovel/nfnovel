@@ -44,7 +44,7 @@ library AuctionManagement {
         auction.highestBidder = address(0);
     }
 
-    function bid(Auction storage auction) internal returns (bool) {
+    function addToBid(Auction storage auction) internal returns (bool) {
         _confirmAuctionIsActive(auction);
 
         uint256 bidIncrement = msg.value;

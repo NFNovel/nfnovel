@@ -227,7 +227,7 @@ describe("NFNovel", () => {
 
         await nfnovelContract.addPage(1, "firstPage");
 
-        await nfnovelContract.connect(bidder).placeBid(1, {
+        await nfnovelContract.connect(bidder).addToBid(1, {
           value: ethers.constants.WeiPerEther.mul(1),
         });
 

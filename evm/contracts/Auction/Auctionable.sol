@@ -17,12 +17,14 @@ abstract contract Auctionable {
         uint256 startingValue,
         uint256 endTime
     );
+
     event AuctionEnded(
         uint256 auctionId,
         address winner,
         uint256 finalValue,
         string reason
     );
+
     event AuctionCancelled(uint256 auctionId);
 
     event BidRaised(
@@ -30,6 +32,7 @@ abstract contract Auctionable {
         address highestBidder,
         uint256 highestBid
     );
+
     event BidWithdrawn(uint256 auctionId, address bidder, uint256 bid);
 
     event AuctionDefaultsUpdated(AuctionSettings newDefaults);
@@ -57,10 +60,10 @@ abstract contract Auctionable {
         return _endTime - block.timestamp;
     }
 
-    function placeBid(uint256 auctionId) public payable returns (bool success) {
+    function addToBid(uint256 auctionId) public payable returns (bool success) {
         Auction storage auction = _getAuction(auctionId);
         emit BidRaised(auction.id, auction.highestBidder, auction.highestBid);
-        success = auction.bid();
+        success = auction.addToBid();
     }
 
     function checkBid(uint256 auctionId)

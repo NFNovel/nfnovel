@@ -16,7 +16,7 @@ export type AuctionModalProps = {
   imageSource: string;
   hasConnectedAccount: boolean;
   metadata: IERC721TokenMetadata;
-  onPlaceBid: (amountInWei: BigNumber) => Promise<boolean>;
+  onAddToBid: (amountInWei: BigNumber) => Promise<boolean>;
   onWithdrawBid: (amountInWei: BigNumber) => Promise<boolean>;
   onClose: () => void;
 };
@@ -28,7 +28,7 @@ function AuctionModal(props: AuctionModalProps) {
     metadata, // THINK: any use for metadata?
     imageSource,
     onClose,
-    onPlaceBid,
+    onAddToBid,
     onWithdrawBid,
   } = props;
 
@@ -66,7 +66,7 @@ function AuctionModal(props: AuctionModalProps) {
           <div className="p-5">{highestBidderMessage}</div>
           <BiddingForm
             auction={auction}
-            onPlaceBid={onPlaceBid}
+            onAddToBid={onAddToBid}
             onWithdrawBid={onWithdrawBid}
           />
         </div>

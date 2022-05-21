@@ -20,7 +20,7 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
       await getTestSigningAccounts();
   });
 
-  describe("placeBid", () => {
+  describe("addToBid", () => {
     let nfnovelContract: NFNovel;
     let auction: { id: BigNumber; endTime: BigNumber };
 
@@ -51,7 +51,7 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
     context("reverts", () => {
       it("with BidBelowStartingValue if the bid is lower than the startingValue", () =>
         expect(
-          nfnovelContract.placeBid(panelAuctionId, {
+          nfnovelContract.addToBid(panelAuctionId, {
             // set a value below starting value
             value: auctionStartingValue.div(2),
           })
@@ -67,7 +67,7 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
         await setBlockToAuctionEndTime(auction.endTime);
 
         await expect(
-          nfnovelContract.placeBid(panelTokenId, {
+          nfnovelContract.addToBid(panelTokenId, {
             // set a value above starting value
             value: auctionStartingValue.mul(2),
           })
@@ -113,7 +113,7 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
 
         await nfnovelContract.addPage(1, "");
 
-        await nfnovelContract.connect(firstBidder).placeBid(1, {
+        await nfnovelContract.connect(firstBidder).addToBid(1, {
           value: ethers.constants.WeiPerEther.mul(3),
         });
 
@@ -154,13 +154,13 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
 
         await nfnovelContract
           .connect(nonHighestBidderAccount)
-          .placeBid(panelAuctionId, {
+          .addToBid(panelAuctionId, {
             value: nonHighestBidWei,
           });
 
         await nfnovelContract
           .connect(highestBidderAccount)
-          .placeBid(panelAuctionId, {
+          .addToBid(panelAuctionId, {
             value: highestBidWei,
           });
 
@@ -217,7 +217,7 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
 
         await nfnovelContract
           .connect(firstBidder)
-          .placeBid(1, { value: bidAmountWei });
+          .addToBid(1, { value: bidAmountWei });
 
         expect(await nfnovelContract.connect(firstBidder).checkBid(1)).to.eq(
           bidAmountWei

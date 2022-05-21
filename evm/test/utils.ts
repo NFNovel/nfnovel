@@ -145,7 +145,7 @@ export const setPanelAuctionHighestBidder = async (
 
   await nfnovelContract
     .connect(highestBidder)
-    .placeBid(panelAuctionId, { value: bid });
+    .addToBid(panelAuctionId, { value: bid });
 
   return {
     bid,
