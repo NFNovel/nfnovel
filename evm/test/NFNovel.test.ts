@@ -452,49 +452,114 @@ describe("NFNovel", () => {
     });
   });
 
-  describe("Panel Auctions", () => {
-    let nfnovelContract: NFNovel;
-    let auction: { id: BigNumber; endTime: BigNumber };
+  describe.only("Panel Auctions", () => {
+    describe("withdrawBid", () => {
+      context("reverts", () => {
+        it("with NoBidToWithdraw if there is no bid value for the caller", async () => {
+          const nfnovelContract = await deployNFNovelTestContract(
+            owner,
+            "title",
+            "SYM"
+          );
 
-    const panelsCount = 1;
-    const panelTokenId = 1;
-    const panelAuctionId = panelTokenId;
-    const obscuredBaseURI = "ipfs://obscured";
-    const auctionStartingValue = ethers.constants.WeiPerEther.mul(2);
+          await nfnovelContract.addPage(1, "");
 
-    before(async () => {
-      nfnovelContract = await deployNFNovelTestContract(
-        owner,
-        "Mysterio",
-        "NFN-1"
-      );
+          return expect(
+            nfnovelContract.connect(bidder).withdrawBid(1)
+          ).to.be.revertedWith("NoBidToWithdraw");
+        });
 
-      // set a starting value
-      await nfnovelContract.setAuctionDefaults({
-        duration: 30,
-        startingValue: auctionStartingValue,
-        minimumBidValue: 0,
+        it("with CannotWithdrawHighestBid if the caller is the highest bidder", async () => {
+          const nfnovelContract = await deployNFNovelTestContract(
+            owner,
+            "title",
+            "SYM"
+          );
+
+          await nfnovelContract.addPage(1, "");
+
+          await nfnovelContract.connect(bidder).placeBid(1, {
+            value: ethers.constants.WeiPerEther.mul(3),
+          });
+
+          // confirm they are the highest bidder
+          expect(
+            (await nfnovelContract.auctions(1)).highestBidder
+          ).to.be.hexEqual(bidderAddress);
+
+          return expect(
+            nfnovelContract.connect(bidder).withdrawBid(1)
+          ).to.be.revertedWith("CannotWithdrawHighestBid");
+        });
       });
 
-      await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
-      auction = await nfnovelContract.auctions(panelAuctionId);
-    });
+      it("transfers the total unused bid value from the contract to the non-highest bidder", async () => {
+        const nonHighestBidderAccount = nonOwner;
+        const nonHighestBidderAddress = nonOwnerAddress;
+        const nonHighestBidWei = ethers.constants.WeiPerEther.mul(2);
 
-    context("withdraws", () => {
-      context("reverts", () => {
-        it("with NoBidToWithdraw if there are no bids", async () => {
-          expect(await nfnovelContract.checkBid(panelAuctionId)).to.eq(
-            BigNumber.from(0)
-          );
+        const highestBidderAccount = bidder;
+        const highestBidWei = ethers.constants.WeiPerEther.mul(3);
 
-          expect(nfnovelContract.withdrawBid(panelAuctionId)).revertedWith(
-            "NoBidToWithdraw"
-          );
+        const nfnovelContract = await deployNFNovelTestContract(
+          owner,
+          "title",
+          "SYM"
+        );
+
+        await nfnovelContract.addPage(1, "");
+
+        await nfnovelContract.connect(nonHighestBidderAccount).placeBid(1, {
+          value: nonHighestBidWei,
         });
+
+        await nfnovelContract.connect(highestBidderAccount).placeBid(1, {
+          value: highestBidWei,
+        });
+
+        // confirm they are not the highest bidder
+        expect(
+          (await nfnovelContract.auctions(1)).highestBidder
+        ).not.to.be.hexEqual(nonHighestBidderAddress);
+
+        await expect(
+          await nfnovelContract.connect(nonHighestBidderAccount).withdrawBid(1)
+        ).to.changeEtherBalances(
+          [nfnovelContract, nonHighestBidderAccount],
+          // contract loses (mul(-1)) value, non highest bidder gains value
+          [nonHighestBidWei.mul(-1), nonHighestBidWei]
+        );
       });
     });
 
     describe("placeBid", () => {
+      let nfnovelContract: NFNovel;
+      let auction: { id: BigNumber; endTime: BigNumber };
+
+      const panelsCount = 1;
+      const panelTokenId = 1;
+      const panelAuctionId = panelTokenId;
+      const obscuredBaseURI = "ipfs://obscured";
+      const auctionStartingValue = ethers.constants.WeiPerEther.mul(2);
+
+      before(async () => {
+        nfnovelContract = await deployNFNovelTestContract(
+          owner,
+          "Mysterio",
+          "NFN-1"
+        );
+
+        // set a starting value
+        await nfnovelContract.setAuctionDefaults({
+          duration: 30,
+          startingValue: auctionStartingValue,
+          minimumBidValue: 0,
+        });
+
+        await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
+        auction = await nfnovelContract.auctions(panelAuctionId);
+      });
+
       context("reverts", () => {
         it("with BidBelowStartingValue if the bid is lower than the startingValue", () =>
           expect(
