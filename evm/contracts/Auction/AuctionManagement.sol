@@ -61,8 +61,12 @@ library AuctionManagement {
         return true;
     }
 
-    function checkBid(Auction storage auction) internal view returns (uint256 bidAmount){
-        return auction.bids[msg.sender];  
+    function checkBid(Auction storage auction)
+        internal
+        view
+        returns (uint256 currentBid)
+    {
+        currentBid = auction.bids[msg.sender];
     }
 
     function cancel(Auction storage auction) internal returns (bool) {
@@ -76,7 +80,10 @@ library AuctionManagement {
         return auction.state == AuctionStates.Ended;
     }
 
-    function withdraw(Auction storage auction) internal returns (address bidder, uint256 withdrawValue) {
+    function withdraw(Auction storage auction)
+        internal
+        returns (address bidder, uint256 withdrawValue)
+    {
         // BUG: this cant be correct logic
         // also should we block withdrawals while the auction is active?
         // THINK: just dont let the highest bidder pull out?

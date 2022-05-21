@@ -10,20 +10,30 @@ import "./AuctionManagement.sol";
 abstract contract Auctionable {
     using Counters for Counters.Counter;
     using AuctionManagement for Auction;
+
     event AuctionStarted(
         uint256 auctionId,
         uint256 tokenId,
         uint256 startingValue,
         uint256 endTime
     );
-    event AuctionEnded(uint256 auctionId, address winner, uint256 finalValue, string reason);
+    event AuctionEnded(
+        uint256 auctionId,
+        address winner,
+        uint256 finalValue,
+        string reason
+    );
     event AuctionCancelled(uint256 auctionId);
 
-    event BidRaised(uint256 auctionId, address highestBidder, uint256 highestBid);
+    event BidRaised(
+        uint256 auctionId,
+        address highestBidder,
+        uint256 highestBid
+    );
     event BidWithdrawn(uint256 auctionId, address bidder, uint256 bid);
 
     event AuctionDefaultsUpdated(AuctionSettings newDefaults);
-    
+
     error AuctionNotFound();
 
     Counters.Counter private _auctionIds;
@@ -49,13 +59,16 @@ abstract contract Auctionable {
 
     function placeBid(uint256 auctionId) public payable returns (bool success) {
         Auction storage auction = _getAuction(auctionId);
-        emit BidRaised(auction.id, auction.highestBidder, auction.highestBid);       
+        emit BidRaised(auction.id, auction.highestBidder, auction.highestBid);
         success = auction.bid();
     }
 
-    function checkBid(uint256 auctionId) public view returns (uint256 bidAmount){
-        Auction storage auction = _getAuction(auctionId);
-        return auction.checkBid();
+    function checkBid(uint256 auctionId)
+        public
+        view
+        returns (uint256 currentBid)
+    {
+        currentBid = _getAuction(auctionId).checkBid();
     }
 
     function withdrawBid(uint256 auctionId) public returns (bool success) {
@@ -91,7 +104,6 @@ abstract contract Auctionable {
             newAuction.startingValue,
             newAuction.endTime
         );
-
 
         return newAuctionId;
     }
