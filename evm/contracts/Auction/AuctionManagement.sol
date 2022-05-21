@@ -84,14 +84,6 @@ library AuctionManagement {
         internal
         returns (address bidder, uint256 withdrawValue)
     {
-        // BUG: this cant be correct logic
-        // also should we block withdrawals while the auction is active?
-        // THINK: just dont let the highest bidder pull out?
-        if (
-            auction.state == AuctionStates.Ended ||
-            auction.state == AuctionStates.Cancelled
-        ) revert AuctionIsActive();
-
         bidder = msg.sender;
         withdrawValue = auction.bids[bidder];
 
