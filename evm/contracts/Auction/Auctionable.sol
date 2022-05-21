@@ -95,7 +95,7 @@ abstract contract Auctionable {
             tokenId,
             auctionSettings.duration,
             auctionSettings.startingValue,
-            auctionSettings.minimumBidValue
+            auctionSettings.minimumBidIncrement
         );
 
         emit AuctionStarted(

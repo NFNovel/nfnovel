@@ -221,7 +221,7 @@ describe("NFNovel", () => {
 
         await nfnovelContract.setAuctionDefaults({
           duration: auctionDurationSeconds,
-          minimumBidValue: 0,
+          minimumBidIncrement: 0,
           startingValue: 0,
         });
 

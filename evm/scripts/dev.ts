@@ -17,7 +17,7 @@ async function devSetup(): Promise<void> {
   // set defaults BEFORE adding pages (which creates panel auctions)
   await nfnovel.setAuctionDefaults({
     duration: 30 * 60,
-    minimumBidValue: 0,
+    minimumBidIncrement: 0,
     startingValue: ethers.constants.WeiPerEther.mul(2),
   });
 

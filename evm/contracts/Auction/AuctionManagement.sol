@@ -25,7 +25,7 @@ library AuctionManagement {
         uint256 tokenId,
         uint256 auctionDuration,
         uint256 startingValue,
-        uint256 minimumBidValue
+        uint256 minimumBidIncrement
     ) internal {
         if (auction.state != AuctionStates.Pending) revert AuctionNotPending();
 
@@ -38,7 +38,7 @@ library AuctionManagement {
         auction.endTime = block.timestamp + auctionDuration;
 
         auction.startingValue = startingValue;
-        auction.minimumBidValue = minimumBidValue;
+        auction.minimumBidIncrement = minimumBidIncrement;
 
         auction.highestBid = 0;
         auction.highestBidder = address(0);
@@ -118,7 +118,7 @@ library AuctionManagement {
     {
         if (bidAmount <= auction.startingValue) revert BidBelowStartingValue();
         if (bidAmount <= auction.highestBid) revert BidBelowHighestBid();
-        if (bidAmount < auction.highestBid + auction.minimumBidValue)
+        if (bidAmount < auction.highestBid + auction.minimumBidIncrement)
             revert BidBelowMinimumIncrement();
     }
 

@@ -41,7 +41,7 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
       await nfnovelContract.setAuctionDefaults({
         duration: 30,
         startingValue: auctionStartingValue,
-        minimumBidValue: 0,
+        minimumBidIncrement: 0,
       });
 
       await nfnovelContract.addPage(panelsCount, obscuredBaseURI);
@@ -58,7 +58,7 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
         ).to.be.revertedWith("BidBelowStartingValue"));
 
       it(
-        "with BidBelowMinimumIncrement if the cumulative bid is below the highest bid + the auction minimum bid value"
+        "with BidBelowMinimumIncrement if the cumulative bid of the caller is below the highest bid + the minimum bid increment"
       );
 
       // NOTE: this test that speeds up block time must come after any that need an Active auction

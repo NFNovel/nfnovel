@@ -13,7 +13,7 @@ export type Auction = {
   /** in wei */
   startingValue: BigNumber;
   /** in wei */
-  minimumBidValue: BigNumber;
+  minimumBidIncrement: BigNumber;
   /** in wei */
   highestBid: BigNumber;
   highestBidder: string;
@@ -23,7 +23,7 @@ export type AuctionSettings = {
   /** seconds */
   duration: BigNumber;
   startingValue: BigNumber;
-  minimumBidValue: BigNumber;
+  minimumBidIncrement: BigNumber;
 };
 
 export enum AuctionStates {
