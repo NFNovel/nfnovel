@@ -59,11 +59,6 @@ const Panel = (props: PanelProps) => {
     }
   };
 
-  // TODO: implement calling withdrawBid on nfnovel
-  const handleWithdrawBid = async () => {
-    return true;
-  };
-
   // TODO: implement calling mintPanel on nfnovel
   const handleMintPanel = async () => {
     return true;
@@ -74,9 +69,14 @@ const Panel = (props: PanelProps) => {
 
   const handleCheckBid = async () => {
     const bid = await nfnovel.checkBid(auction.id);
-    console.log("handleCheckBid", bid);
 
     return bid;
+  };
+
+  // TODO: implement calling withdrawBid on nfnovel
+  const handleWithdrawBid = async () => {
+    console.log("auction.id", auction.id);
+    await nfnovel.withdrawBid(auction.id);
   };
 
   return (
@@ -94,9 +94,9 @@ const Panel = (props: PanelProps) => {
             metadata={metadata}
             hasConnectedAccount={!!connectedAccount}
             onAddToBid={handleAddToBid}
-            onWithdrawBid={handleWithdrawBid}
             onClose={closeAuctionModal}
             getCurrentBid={handleCheckBid}
+            onWithdrawBid={handleWithdrawBid}
           />
         </Button>
       </div>

@@ -66,7 +66,7 @@ const BiddingForm = (props: {
   };
 
   const withdrawBid = async () => {
-    const success = await onWithdrawBid(bidInWei);
+    return await onWithdrawBid();
   };
 
   const connectAccount = async () => {
@@ -120,16 +120,16 @@ const BiddingForm = (props: {
   // NOTE: refactor this
   // should use checkBid result not bidInWei
   // because bidInWei is only in state, checkBid is current from on-chain data
-  if (auction.state !== 1)
-    return (
-      bidInWei && (
-        <Button
-          className="p-5"
-          text={`Withdraw ${ethers.utils.formatEther(bidInWei)}`}
-          onClick={withdrawBid}
-        />
-      )
-    );
+  // if (auction.state !== 1)
+  //   return (
+  //     bidInWei && (
+  //       <Button
+  //         className="p-5"
+  //         text={`Withdraw ${ethers.utils.formatEther(bidInWei)}`}
+  //         onClick={withdrawBid}
+  //       />
+  //     )
+  //   );
 
   const handleTotalBid = () => {
     return currentBid && ethers.utils.formatEther(currentBid?.add(bidInWei));
@@ -154,6 +154,7 @@ const BiddingForm = (props: {
         />
         <div className="mx-4">
           Total Bid: {currentBid ? handleTotalBid()?.toString() : null}
+          <span> </span> ETH
         </div>
       </div>
 
@@ -167,7 +168,7 @@ const BiddingForm = (props: {
       <Button
         className="p-5"
         text="Withdraw bid"
-        onClick={addToBid}
+        onClick={withdrawBid}
         disabled={auction.state !== 1}
       />
     </div>

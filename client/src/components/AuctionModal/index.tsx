@@ -17,9 +17,9 @@ export type AuctionModalProps = {
   hasConnectedAccount: boolean;
   metadata: IERC721TokenMetadata;
   onAddToBid: (amountInWei: BigNumber) => Promise<boolean>;
-  onWithdrawBid: (amountInWei: BigNumber) => Promise<boolean>;
   onClose: () => void;
   getCurrentBid: () => Promise<BigNumber>;
+  onWithdrawBid: () => Promise<void>;
 };
 
 function AuctionModal(props: AuctionModalProps) {
