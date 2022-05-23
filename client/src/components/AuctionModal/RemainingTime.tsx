@@ -13,13 +13,11 @@ const RemainingTime = (props: { auction: Auction; isOpen: boolean }) => {
     () => {
       if (!auction) return;
 
-      setTimeRemaining(
-        DateTime.fromSeconds(auction.endTime.toNumber()).diffNow([
-          "seconds",
-          "hours",
-          "minutes",
-        ]),
-      );
+      const _timeRemaining = DateTime.fromSeconds(
+        auction.endTime.toNumber(),
+      ).diffNow(["seconds", "hours", "minutes"]);
+      
+      setTimeRemaining(_timeRemaining);
     },
     isOpen ? 1000 : null,
   );
@@ -40,10 +38,10 @@ const RemainingTime = (props: { auction: Auction; isOpen: boolean }) => {
   )}`;
 
   return (
-    <div className="bg-red-400 p-10 flex flex-col">
+    <div className="border-2 rounded-lg mt-10 h-10 p-2">
       {" "}
       <div>
-        {timeRemaining.toMillis() <= 0 ?
+        {auction.state !== 1 || timeRemaining.toMillis() <= 0 ?
           "Auction ended!" :
           timeRemainingMessage}
       </div>

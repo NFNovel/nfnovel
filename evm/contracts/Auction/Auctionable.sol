@@ -62,12 +62,14 @@ abstract contract Auctionable {
 
     function addToBid(uint256 auctionId) public payable returns (bool success) {
         Auction storage auction = _getAuction(auctionId);
+
+        success = auction.addToBid();
+
         emit AuctionBidRaised(
             auction.id,
             auction.highestBidder,
             auction.highestBid
         );
-        success = auction.addToBid();
     }
 
     function checkBid(uint256 auctionId)

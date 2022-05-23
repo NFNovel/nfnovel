@@ -15,10 +15,11 @@ async function devSetup(): Promise<void> {
   );
 
   // set defaults BEFORE adding pages (which creates panel auctions)
+  // NOTE: Leaving starting value at 0 to show in UI correctle that highestBid is 0, not 2. Possible bug to fix later.
   await nfnovel.setAuctionDefaults({
     duration: 30 * 60,
     minimumBidIncrement: 0,
-    startingValue: ethers.constants.WeiPerEther.mul(2),
+    startingValue: ethers.constants.WeiPerEther.mul(0),
   });
 
   await addPages(deployments.NFNovel.contractAddress);
