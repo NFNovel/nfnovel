@@ -1,7 +1,7 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import { NFNovelContext } from "src/contexts/nfnovel-context";
 import { Button, Spinner } from "@blueprintjs/core";
-import { BigNumber } from "ethers";
+import { BigNumber, ethers } from "ethers";
 
 import AuctionModal from "./AuctionModal";
 
@@ -21,19 +21,12 @@ const Panel = (props: PanelProps) => {
 
   const { nfnovel, connectedAccount } = useContext(NFNovelContext);
 
+  // FUTURE: create a WithAuction context provider that wraps around AuctionModal
+  // should take as props: contract instance, isOpen, onMint and hooks for various calls
+  // should move all this listener / update / auction props stuff into it
   const [auction, setAuction] = useState<Auction>();
+  const [currentBid, setCurrentBid] = useState<BigNumber>(BigNumber.from(0));
   const [auctionIsOpen, setAuctionIsOpen] = useState<boolean>(false);
-
-  useEffect(() => {
-    const getPanelAuction = async () => {
-      if (!nfnovel) return null;
-
-      const panelAuctionId = await nfnovel.getPanelAuctionId(panelTokenId);
-      setAuction(await nfnovel.auctions(panelAuctionId));
-    };
-
-    getPanelAuction();
-  }, [nfnovel, panelTokenId]);
 
   const handleEndAuction = useCallback(
     (panelAuctionId: BigNumber) =>
@@ -49,22 +42,48 @@ const Panel = (props: PanelProps) => {
   );
 
   const handleBidRaised = useCallback(
-    (panelAuctionId: BigNumber, highestBidder: string, highestBid: BigNumber) =>
-      setAuction((currentAuction) => {
-        console.log("handleBidRaised", {
-          panelAuctionId: panelAuctionId.toString(),
-          highestBidder,
-          highestBid: highestBid.toString(),
-        });
-        if (!currentAuction) return;
-        if (!panelAuctionId.eq(currentAuction.id)) return currentAuction;
+    (
+      panelAuctionId: BigNumber,
+      highestBidder: string,
+      highestBid: BigNumber,
+    ) => {
+      if (!nfnovel || !connectedAccount || !auction) return;
 
-        console.log("setting new highest bid and highest bidder");
+      if (!panelAuctionId.eq(auction.id)) return;
 
-        return Object.assign({}, currentAuction, { highestBid, highestBidder });
-      }),
-    [],
+      setAuction(Object.assign({}, auction, { highestBid, highestBidder }));
+
+      if (highestBidder === connectedAccount.address) setCurrentBid(highestBid);
+    },
+    [nfnovel, auction, connectedAccount],
   );
+
+  const handleBidWithdrawn = useCallback(
+    (panelAuctionId: BigNumber, withdrawingBidder: string) => {
+      if (!auction || !connectedAccount) return;
+      if (!panelAuctionId.eq(auction.id)) return;
+
+      if (withdrawingBidder === connectedAccount.address)
+        setCurrentBid(BigNumber.from(0));
+    },
+    [auction, connectedAccount],
+  );
+
+  useEffect(() => {
+    const getPanelAuction = async () => {
+      if (!nfnovel) return null;
+
+      const panelAuctionId = await nfnovel.getPanelAuctionId(panelTokenId);
+      setAuction(await nfnovel.auctions(panelAuctionId));
+
+      // only run if they are authenticated
+      if (nfnovel.signer) {
+        setCurrentBid(await nfnovel.checkBid(panelAuctionId));
+      }
+    };
+
+    getPanelAuction();
+  }, [nfnovel, panelTokenId]);
 
   useEffect(() => {
     const setUpAuctionListeners = () => {
@@ -80,6 +99,12 @@ const Panel = (props: PanelProps) => {
         nfnovel.interface.events["AuctionBidRaised(uint256,address,uint256)"]
           .name,
         handleBidRaised,
+      );
+
+      nfnovel.on(
+        nfnovel.interface.events["AuctionBidWithdrawn(uint256,address,uint256)"]
+          .name,
+        handleBidWithdrawn,
       );
     };
 
@@ -99,8 +124,14 @@ const Panel = (props: PanelProps) => {
           .name,
         handleBidRaised,
       );
+
+      nfnovel.removeListener(
+        nfnovel.interface.events["AuctionBidWithdrawn(uint256,address,uint256)"]
+          .name,
+        handleBidWithdrawn,
+      );
     };
-  }, [nfnovel, handleBidRaised, handleEndAuction]);
+  }, [nfnovel, handleEndAuction, handleBidRaised, handleBidWithdrawn]);
 
   const openAuctionModal = () => !auctionIsOpen && setAuctionIsOpen(true);
   const closeAuctionModal = () => auctionIsOpen && setAuctionIsOpen(false);
@@ -108,10 +139,13 @@ const Panel = (props: PanelProps) => {
   if (!imageSource || !metadata) return null;
   if (!nfnovel || !auction) return <Spinner />;
 
+  // TODO: refactor to useCallback
   const handleAddToBid = async (amountInWei: BigNumber) => {
     try {
-      const tx = await nfnovel.addToBid(auction.id, { value: amountInWei });
-      await tx.wait();
+      await nfnovel.addToBid(auction.id, { value: amountInWei });
+      // NOTE: pass waitingOnEvent prop down to AuctionModal/children
+      // they should present a loading / spinner when waiting on event
+      // setWaitingOnEvent(true);
 
       return true;
     } catch (error: any) {
@@ -127,8 +161,7 @@ const Panel = (props: PanelProps) => {
 
   const handleMintPanel = async () => {
     try {
-      const tx = await nfnovel.mintPanel(auction.id);
-      await tx.wait();
+      await nfnovel.mintPanel(auction.id);
 
       return true;
     } catch (error: any) {
@@ -142,16 +175,9 @@ const Panel = (props: PanelProps) => {
     }
   };
 
-  const handleCheckBid = async () => {
-    const bid = await nfnovel.checkBid(auction.id);
-
-    return bid;
-  };
-
   const handleWithdrawBid = async () => {
     try {
-      const tx = await nfnovel.withdrawBid(auction.id);
-      await tx.wait();
+      await nfnovel.withdrawBid(auction.id);
 
       return true;
     } catch (error: any) {
@@ -165,6 +191,10 @@ const Panel = (props: PanelProps) => {
     }
   };
 
+  console.log({
+    currentBid: currentBid && ethers.utils.formatEther(currentBid),
+  });
+
   return (
     <article className="max-w-md mx-auto mt-4 bg-blue-800 shadow-lg border rounded-md duration-300 hover:shadow-sm">
       <div className="filter opacity-100 hover:opacity-50 hover:red-500 duration-1000">
@@ -176,12 +206,12 @@ const Panel = (props: PanelProps) => {
           <AuctionModal
             imageSource={imageSource}
             auction={auction}
+            currentBid={currentBid}
             isOpen={auctionIsOpen}
             metadata={metadata}
             hasConnectedAccount={!!connectedAccount}
             onAddToBid={handleAddToBid}
             onClose={closeAuctionModal}
-            getCurrentBid={handleCheckBid}
             onWithdrawBid={handleWithdrawBid}
             onMintPanel={handleMintPanel}
           />
