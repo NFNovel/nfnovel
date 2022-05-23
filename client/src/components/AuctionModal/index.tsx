@@ -1,5 +1,5 @@
 /* eslint-disable @next/next/no-img-element */
-import { useContext, useState } from "react";
+import { useContext, useEffect, useState } from "react";
 import { BigNumber, ethers } from "ethers";
 import { Button, Drawer, Position } from "@blueprintjs/core";
 import { NFNovelContext } from "src/contexts/nfnovel-context";
@@ -37,6 +37,24 @@ function AuctionModal(props: AuctionModalProps) {
   } = props;
 
   const { connectedAccount } = useContext(NFNovelContext);
+  const [mintSuccessful, setMintSuccessul] = useState<boolean>();
+  const [finalWithdrawValueWei, setFinalWithdrawValueWei] = useState<BigNumber>(
+    BigNumber.from(0),
+  );
+
+  const handleMintPanel = async () => {
+    const success = await onMintPanel();
+    setMintSuccessul(success);
+  };
+
+  useEffect(() => {
+    const getFinalWithdrawValue = async () => {
+      const finalBidValueWei = await getCurrentBid();
+      setFinalWithdrawValueWei(finalBidValueWei);
+    };
+
+    if (auction.state == 2) getFinalWithdrawValue();
+  }, [auction, getCurrentBid]);
 
   if (!auction) return null;
 
@@ -100,16 +118,24 @@ function AuctionModal(props: AuctionModalProps) {
               text={
                 auction.highestBidder === connectedAccount?.address ?
                   "Mint Panel" :
-                  "Withdraw Funds"
+                  `Withdraw ${ethers.utils.formatEther(
+                    finalWithdrawValueWei,
+                  )} ETH`
               }
+              disabled={!finalWithdrawValueWei.gt(0)}
               onClick={
                 auction.highestBidder === connectedAccount?.address ?
-                  onMintPanel :
+                  handleMintPanel :
                   onWithdrawBid
               }
             />
           </div>
         )}
+        {/* TODO: do something similar for bid being successful
+        ideally use toasters to present the info */}
+        {mintSuccessful === true &&
+          `Successfully minted panel ${auction.tokenId.toString()}!`}
+        {mintSuccessful === false && "Failed to mint panel"}
       </div>
     </Drawer>
   );

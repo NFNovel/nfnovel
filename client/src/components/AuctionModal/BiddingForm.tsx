@@ -143,6 +143,7 @@ const BiddingForm = (props: {
             stepSize={0.1}
             allowNumericCharactersOnly={true}
             onValueChange={handleBidInEth}
+            // TODO: update value and reset after placing bid
           />
         </div>
         <div className="p-5 font-bold font-10">
