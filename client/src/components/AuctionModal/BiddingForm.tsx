@@ -10,15 +10,15 @@ import type { Auction } from "src/types/auction";
 
 const BiddingForm = (props: {
   auction: Auction;
+  currentBid: BigNumber;
   onAddToBid: AuctionModalProps["onAddToBid"];
   onWithdrawBid: AuctionModalProps["onWithdrawBid"];
-  getCurrentBid: AuctionModalProps["getCurrentBid"];
 }) => {
   const {
     auction,
+    currentBid,
     onAddToBid,
-    onWithdrawBid,
-    getCurrentBid
+    onWithdrawBid
   } = props;
 
   const {
@@ -29,14 +29,6 @@ const BiddingForm = (props: {
 
   // NOTE: this should not be bidInWei, this should represent the amount to ADD to the bid
   const [bidInWei, setBidInWei] = useState(BigNumber.from(0));
-  const [currentBid, setCurrentBid] = useState<BigNumber>();
-
-  useEffect(() => {
-    const handleCurrentBid = async () => {
-      setCurrentBid(await getCurrentBid());
-    };
-    handleCurrentBid();
-  }, [getCurrentBid, bidInWei, auction.state]);
 
   const handleBidInEth = (bidInEthNumber: number, bidInEthString: string) => {
     // reject negative or "." (invalid) values
@@ -53,19 +45,11 @@ const BiddingForm = (props: {
   const addToBid = async () => {
     const success = await onAddToBid(bidInWei);
 
-    if (success) {
-      setCurrentBid(await getCurrentBid());
-    }
-
     // indicate success/failure
   };
 
   const withdrawBid = async () => {
     const success = await onWithdrawBid();
-
-    if (success) {
-      setCurrentBid(await getCurrentBid());
-    }
   };
 
   const connectAccount = async () => {
@@ -169,14 +153,12 @@ const BiddingForm = (props: {
         <Button
           className="flex flex-grow"
           text={
-            !currentBid || currentBid.isZero() ?
-              "Withdraw bids" :
+            currentBid.isZero() ?
+              "Nothing to withdraw" :
               `Withdraw bids (${ethers.utils.formatEther(currentBid)})`
           }
           onClick={withdrawBid}
-          disabled={
-            auction.state !== 1 || currentBid?.isZero() || isHighestBidder
-          }
+          disabled={currentBid.isZero() || isHighestBidder}
         />
       </div>
     </div>

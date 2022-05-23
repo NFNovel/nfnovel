@@ -13,12 +13,12 @@ import type { IERC721TokenMetadata } from "src/types/token";
 export type AuctionModalProps = {
   isOpen: boolean;
   auction: Auction;
+  currentBid: BigNumber;
   imageSource: string;
   hasConnectedAccount: boolean;
   metadata: IERC721TokenMetadata;
   onAddToBid: (amountInWei: BigNumber) => Promise<boolean>;
   onClose: () => void;
-  getCurrentBid: () => Promise<BigNumber>;
   onWithdrawBid: () => Promise<boolean>;
   onMintPanel: () => Promise<boolean>;
 };
@@ -27,34 +27,28 @@ function AuctionModal(props: AuctionModalProps) {
   const {
     isOpen,
     auction,
+    currentBid,
     metadata, // THINK: any use for metadata?
     imageSource,
     onClose,
     onAddToBid,
     onWithdrawBid,
-    getCurrentBid,
     onMintPanel,
   } = props;
 
   const { connectedAccount } = useContext(NFNovelContext);
   const [mintSuccessful, setMintSuccessul] = useState<boolean>();
-  const [finalWithdrawValueWei, setFinalWithdrawValueWei] = useState<BigNumber>(
-    BigNumber.from(0),
-  );
+  const [withdrawSuccessful, setWithdrawSuccessful] = useState<boolean>();
 
   const handleMintPanel = async () => {
     const success = await onMintPanel();
     setMintSuccessul(success);
   };
 
-  useEffect(() => {
-    const getFinalWithdrawValue = async () => {
-      const finalBidValueWei = await getCurrentBid();
-      setFinalWithdrawValueWei(finalBidValueWei);
-    };
-
-    if (auction.state == 2) getFinalWithdrawValue();
-  }, [auction, getCurrentBid]);
+  const handleWithdrawBid = async () => {
+    const success = await onWithdrawBid();
+    setWithdrawSuccessful(success);
+  };
 
   if (!auction) return null;
 
@@ -98,7 +92,7 @@ function AuctionModal(props: AuctionModalProps) {
                 auction={auction}
                 onAddToBid={onAddToBid}
                 onWithdrawBid={onWithdrawBid}
-                getCurrentBid={getCurrentBid}
+                currentBid={currentBid}
               />
             </div>
             <RemainingTime
@@ -110,32 +104,44 @@ function AuctionModal(props: AuctionModalProps) {
         {auction.state === 2 && (
           //TODO: This is not fully working and logic needs to be finished.
           <div className="flex flex-col p-10">
-            {auction.highestBidder === connectedAccount?.address ?
-              "You are the winner! Mint the panel" :
-              "Sorry you didn't win, get your funds back"}
-            <Button
-              className="h-20"
-              text={
-                auction.highestBidder === connectedAccount?.address ?
-                  "Mint Panel" :
-                  `Withdraw ${ethers.utils.formatEther(
-                    finalWithdrawValueWei,
-                  )} ETH`
-              }
-              disabled={!finalWithdrawValueWei.gt(0)}
-              onClick={
-                auction.highestBidder === connectedAccount?.address ?
-                  handleMintPanel :
-                  onWithdrawBid
-              }
-            />
+            {}
+            {auction.highestBidder === connectedAccount?.address && (
+              <>
+                <Button
+                  className="h-20"
+                  text={"Mint Panel"}
+                  disabled={mintSuccessful !== undefined}
+                  onClick={handleMintPanel}
+                />
+                {mintSuccessful === true &&
+                  `Successfully minted panel ${auction.tokenId.toString()} for ${ethers.utils.formatEther(
+                    auction.highestBid,
+                  )} ETH!`}
+                {mintSuccessful === false && "Failed to mint panel"}
+              </>
+            )}
+            {auction.highestBidder !== connectedAccount?.address && (
+              <>
+                <Button
+                  className="h-20"
+                  text={
+                    currentBid.isZero() ?
+                      "Nothing to withdraw" :
+                      `Withdraw ${ethers.utils.formatEther(currentBid)} ETH`
+                  }
+                  disabled={withdrawSuccessful !== undefined}
+                  onClick={handleWithdrawBid}
+                />
+                {withdrawSuccessful === true &&
+                  !currentBid.isZero() &&
+                  `Successfully withdrew ${ethers.utils.formatEther(
+                    currentBid,
+                  )} ETH!`}
+                {withdrawSuccessful === false && "Failed to withdraw"}
+              </>
+            )}
           </div>
         )}
-        {/* TODO: do something similar for bid being successful
-        ideally use toasters to present the info */}
-        {mintSuccessful === true &&
-          `Successfully minted panel ${auction.tokenId.toString()}!`}
-        {mintSuccessful === false && "Failed to mint panel"}
       </div>
     </Drawer>
   );
