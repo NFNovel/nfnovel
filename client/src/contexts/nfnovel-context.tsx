@@ -1,7 +1,8 @@
-import { ethers, Contract } from "ethers";
+import { ethers, Contract, BigNumber } from "ethers";
 import React, { createContext, useState, useEffect } from "react";
 import NFNovelDeployment from "@contracts/deployments/NFNovel.json";
 import NFNovelContract from "@contracts/NFNovel/NFNovel.sol/NFNovel.json";
+import PanelOwnerService from "src/services/panel-owner-service";
 
 import type { Signer } from "ethers";
 import type { NFNovel } from "@contracts/types/NFNovel";
@@ -17,6 +18,9 @@ export interface INFNovelContext {
 export interface IConnectedAccount {
   signer: Signer;
   address: string;
+  isPanelOwner: boolean;
+  // FUTURE: if need to access which panels they own specifically (like to highlight the ones they own)
+  // ownedPanelTokenIds: BigNumber[];
 }
 
 export const NFNovelContext = createContext<INFNovelContext>({
@@ -31,6 +35,7 @@ const WithNFNovel = (props: { children?: React.ReactNode }) => {
   const { children } = props;
 
   const [nfnovel, setNfnovel] = useState<NFNovel | null>(null);
+  // TODO: refactor to pull this out into its own context / use WAGMI: https://wagmi.sh/
   const [connectedAccount, setConnectedAccount] = useState<IConnectedAccount | null>(null);
   const [metamaskProvider, setMetamaskProvider] = useState<Web3Provider | null>(
     null,
@@ -72,8 +77,12 @@ const WithNFNovel = (props: { children?: React.ReactNode }) => {
 
       const signer = await metamaskProvider.getSigner();
       const address = await signer.getAddress();
+      const ownedPanelTokenIds = await PanelOwnerService.getOwnedPanelTokenIds(
+        address,
+      );
+      const isPanelOwner = ownedPanelTokenIds.length > 0;
 
-      setConnectedAccount({ signer, address });
+      setConnectedAccount({ signer, address, isPanelOwner });
       setNfnovel(nfnovel.connect(signer));
     };
 
