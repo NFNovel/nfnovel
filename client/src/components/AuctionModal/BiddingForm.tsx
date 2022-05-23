@@ -35,9 +35,8 @@ const BiddingForm = (props: {
     const handleCurrentBid = async () => {
       setCurrentBid(await getCurrentBid());
     };
-
     handleCurrentBid();
-  }, [getCurrentBid, bidInWei]);
+  }, [getCurrentBid, bidInWei, auction.state]);
 
   const handleBidInEth = (bidInEthNumber: number, bidInEthString: string) => {
     // reject negative or "." (invalid) values
@@ -51,22 +50,22 @@ const BiddingForm = (props: {
     // https://docs.ethers.io/v5/api/utils/display-logic/#display-logic--units
   };
 
-  // NOTE: should call checkBid and setCurrentBid on component load (should only trigger one time)
-
   const addToBid = async () => {
     const success = await onAddToBid(bidInWei);
 
-    // NOTE: update based on on-chain data
     if (success) {
-      // call checkBid
-      // setCurrentBid to checkBid result
+      setCurrentBid(await getCurrentBid());
     }
 
     // indicate success/failure
   };
 
   const withdrawBid = async () => {
-    return await onWithdrawBid();
+    const success = await onWithdrawBid();
+
+    if (success) {
+      setCurrentBid(await getCurrentBid());
+    }
   };
 
   const connectAccount = async () => {
@@ -117,81 +116,68 @@ const BiddingForm = (props: {
       />
     );
 
-  // NOTE: refactor this
-  // should use checkBid result not bidInWei
-  // because bidInWei is only in state, checkBid is current from on-chain data
-  // if (auction.state !== 1)
-  //   return (
-  //     bidInWei && (
-  //       <Button
-  //         className="p-5"
-  //         text={`Withdraw ${ethers.utils.formatEther(bidInWei)}`}
-  //         onClick={withdrawBid}
-  //       />
-  //     )
-  //   );
-
   const handleTotalBid = () => {
     return currentBid && ethers.utils.formatEther(currentBid?.add(bidInWei));
   };
 
-  const totalBid = currentBid ?
-    parseFloat(ethers.utils.formatEther(bidInWei)) +
-      parseFloat(ethers.utils.formatEther(currentBid)) :
-    null;
+  const totalBid = currentBid ? bidInWei.add(currentBid) : null;
 
-  const highestBid = ethers.utils.formatEther(auction.highestBid);
-
-  const notEnoughForBidding = currentBid && totalBid <= highestBid;
+  const notEnoughForBidding = currentBid && totalBid?.lte(auction.highestBid);
 
   const isHighestBidder = auction.highestBidder === connectedAccount?.address;
 
-  console.log(auction.state);
-  console.log(notEnoughForBidding);
-  console.log(auction.state !== 1 || notEnoughForBidding);
-
   return (
     <div className="p-5 flex flex-wrap flex-col">
-      <div className="p-5 flex flex-wrap flex-row">
-        <div className="mx-4">
+      <div className="p-5 flex flex-wrap flex-row border-2 rounded-md">
+        <div className="border-r-2 p-5 text-justify">
           Current Bid:{" "}
           {currentBid ? ethers.utils.formatEther(currentBid) : null}
           <span> </span> ETH
         </div>
-        <div className="mx-4">Add to your bid: </div>
-        <NumericInput
-          placeholder="Enter a number..."
-          majorStepSize={0.1}
-          min={0}
-          stepSize={0.1}
-          allowNumericCharactersOnly={true}
-          onValueChange={handleBidInEth}
-        />
-        <div className="mx-4">
+        <div className="border-r-2 px-4 text-center">
+          Add to your bid:
+          <NumericInput
+            placeholder="Enter a number..."
+            majorStepSize={0.1}
+            min={0}
+            stepSize={0.1}
+            allowNumericCharactersOnly={true}
+            onValueChange={handleBidInEth}
+          />
+        </div>
+        <div className="p-5 font-bold font-10">
           Total Bid: {currentBid ? handleTotalBid()?.toString() : null}
           <span> </span> ETH
         </div>
       </div>
-
-      <Button
-        className="p-5"
-        text={
-          notEnoughForBidding && !isHighestBidder ?
-            "Can't place bid (you need a little more)" :
-            "Place Bid"
-        }
-        onClick={addToBid}
-        disabled={auction.state !== 1 || notEnoughForBidding}
-      />
-
-      {!currentBid?.isZero() && !isHighestBidder ? (
+      <div className="flex flex-row p-5">
         <Button
-          className="p-5"
-          text="Withdraw bid"
-          onClick={withdrawBid}
-          disabled={auction.state !== 1}
+          className="flex flex-grow mx-1 "
+          text={
+            notEnoughForBidding && !isHighestBidder ?
+              `Can't place bid (need to add more than ${ethers.utils.formatEther(
+                auction.highestBid
+                  .add(auction.minimumBidIncrement)
+                  .sub(currentBid),
+              )} ETH)` :
+              "Place Bid"
+          }
+          onClick={addToBid}
+          disabled={auction.state !== 1 || notEnoughForBidding}
         />
-      ) : null}
+        <Button
+          className="flex flex-grow"
+          text={
+            !currentBid || currentBid.isZero() ?
+              "Withdraw bids" :
+              `Withdraw bids (${ethers.utils.formatEther(currentBid)})`
+          }
+          onClick={withdrawBid}
+          disabled={
+            auction.state !== 1 || currentBid?.isZero() || isHighestBidder
+          }
+        />
+      </div>
     </div>
   );
 };

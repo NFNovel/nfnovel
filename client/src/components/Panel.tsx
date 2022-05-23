@@ -35,6 +35,40 @@ const Panel = (props: PanelProps) => {
     getPanelAuction();
   }, [nfnovel, panelTokenId]);
 
+  // TODO: Set up and test listeners outside react
+  useEffect(() => {
+    const setUpAuctionListener = () => {
+      if (!nfnovel) return;
+      nfnovel.once(
+        nfnovel.interface.events["AuctionEnded(uint256,address,uint256,string)"]
+          .name,
+        async (panelAuctionId: BigNumber) => {
+          if (!auction || !nfnovel) return;
+          if (panelAuctionId !== auction.id) return;
+          setAuction(await nfnovel.auctions(panelAuctionId));
+
+          console.log("Auction ended", { auction });
+        },
+      );
+      console.log("Listener started", {
+        listeners: nfnovel.listeners,
+        listenerCounter: nfnovel.listenerCount,
+      });
+    };
+
+    setUpAuctionListener();
+
+    // return () => {
+    //   if (!nfnovel) return;
+    //   nfnovel.removeListener(
+    //     nfnovel.interface.events["AuctionEnded(uint256,address,uint256,string)"]
+    //       .name,
+    //     setAuctionEnded,
+    //   );
+    //   console.log("Listener ended");
+    // };
+  }, [nfnovel, panelTokenId]);
+
   const openAuctionModal = () => !auctionIsOpen && setAuctionIsOpen(true);
   const closeAuctionModal = () => auctionIsOpen && setAuctionIsOpen(false);
 
@@ -43,7 +77,8 @@ const Panel = (props: PanelProps) => {
 
   const handleAddToBid = async (amountInWei: BigNumber) => {
     try {
-      await nfnovel.addToBid(auction.id, { value: amountInWei });
+      const tx = await nfnovel.addToBid(auction.id, { value: amountInWei });
+      await tx.wait();
 
       setAuction(await nfnovel.auctions(auction.id));
 
@@ -61,7 +96,20 @@ const Panel = (props: PanelProps) => {
 
   // TODO: implement calling mintPanel on nfnovel
   const handleMintPanel = async () => {
-    return true;
+    try {
+      const tx = await nfnovel.mintPanel(auction.id);
+      await tx.wait();
+
+      return true;
+    } catch (error: any) {
+      console.error("withdrawBid failed", {
+        panelTokenId,
+        panelAuctionId: auction.id,
+        error: error,
+      });
+
+      return false;
+    }
   };
 
   // TODO: render the mintPanel button if
@@ -75,8 +123,20 @@ const Panel = (props: PanelProps) => {
 
   // TODO: implement calling withdrawBid on nfnovel
   const handleWithdrawBid = async () => {
-    console.log("auction.id", auction.id);
-    await nfnovel.withdrawBid(auction.id);
+    try {
+      const tx = await nfnovel.withdrawBid(auction.id);
+      await tx.wait();
+
+      return true;
+    } catch (error: any) {
+      console.error("withdrawBid failed", {
+        panelTokenId,
+        panelAuctionId: auction.id,
+        error: error,
+      });
+
+      return false;
+    }
   };
 
   return (
@@ -97,6 +157,7 @@ const Panel = (props: PanelProps) => {
             onClose={closeAuctionModal}
             getCurrentBid={handleCheckBid}
             onWithdrawBid={handleWithdrawBid}
+            onMintPanel={handleMintPanel}
           />
         </Button>
       </div>

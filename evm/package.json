@@ -11,6 +11,7 @@
     "clean": "hardhat clean",
     "build": "hardhat compile",
     "revealPage": "hardhat revealPage --network localhost --page",
+    "endPanelAuction": "hardhat endPanelAuction --network localhost --panel-auction-id",
     "deploy": "hardhat run scripts/deploy.ts --network"
   },
   "keywords": [],

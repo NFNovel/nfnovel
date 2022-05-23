@@ -1,7 +1,7 @@
 /* eslint-disable @next/next/no-img-element */
-import { useContext } from "react";
+import { useContext, useState } from "react";
 import { BigNumber, ethers } from "ethers";
-import { Drawer, Position } from "@blueprintjs/core";
+import { Button, Drawer, Position } from "@blueprintjs/core";
 import { NFNovelContext } from "src/contexts/nfnovel-context";
 
 import BiddingForm from "./BiddingForm";
@@ -19,7 +19,8 @@ export type AuctionModalProps = {
   onAddToBid: (amountInWei: BigNumber) => Promise<boolean>;
   onClose: () => void;
   getCurrentBid: () => Promise<BigNumber>;
-  onWithdrawBid: () => Promise<void>;
+  onWithdrawBid: () => Promise<boolean>;
+  onMintPanel: () => Promise<boolean>;
 };
 
 function AuctionModal(props: AuctionModalProps) {
@@ -32,6 +33,7 @@ function AuctionModal(props: AuctionModalProps) {
     onAddToBid,
     onWithdrawBid,
     getCurrentBid,
+    onMintPanel,
   } = props;
 
   const { connectedAccount } = useContext(NFNovelContext);
@@ -40,7 +42,11 @@ function AuctionModal(props: AuctionModalProps) {
 
   const highestBidderMessage = auction.highestBidder === connectedAccount?.address ?
     "You are the highest bidder!" :
-    `Highest bidder: ${auction.highestBidder}`;
+    auction.highestBidder === ethers.constants.AddressZero ?
+      `No bidders yet` :
+      `Highest bidder: ${auction.highestBidder}`;
+
+  console.log("re-rendering", { auction });
 
   return (
     <Drawer
@@ -56,27 +62,56 @@ function AuctionModal(props: AuctionModalProps) {
       usePortal={true}
       hasBackdrop={true}
     >
+      {" "}
       <div className="flex flex-row">
         <img
           src={imageSource}
           className="border border-indigo-600 h-80"
         />
-        <div className="flex flex-wrap flex-col">
-          <div className="p-5">
-            Highest bid: {ethers.utils.formatEther(auction.highestBid)} ETH
+        {auction.state === 1 && (
+          <>
+            <div className="flex flex-wrap flex-col">
+              <div className="p-5">
+                {auction.highestBidder === ethers.constants.AddressZero ?
+                  "Starting bid: " :
+                  "Highest bid: "}{" "}
+                {ethers.utils.formatEther(auction.highestBid)} ETH
+              </div>
+              <div className="p-5">{highestBidderMessage}</div>
+              <BiddingForm
+                auction={auction}
+                onAddToBid={onAddToBid}
+                onWithdrawBid={onWithdrawBid}
+                getCurrentBid={getCurrentBid}
+              />
+            </div>
+            <RemainingTime
+              auction={auction}
+              isOpen={isOpen}
+            />
+          </>
+        )}
+        {auction.state === 2 && (
+          //TODO: This is not fully working and logic needs to be finished.
+          <div className="flex flex-col p-10">
+            {auction.highestBidder === connectedAccount?.address ?
+              "You are the winner! Mint the panel" :
+              "Sorry you didn't win, get your funds back"}
+            <Button
+              className="h-20"
+              text={
+                auction.highestBidder === connectedAccount?.address ?
+                  "Mint Panel" :
+                  "Withdraw Funds"
+              }
+              onClick={
+                auction.highestBidder === connectedAccount?.address ?
+                  onMintPanel :
+                  onWithdrawBid
+              }
+            />
           </div>
-          <div className="p-5">{highestBidderMessage}</div>
-          <BiddingForm
-            auction={auction}
-            onAddToBid={onAddToBid}
-            onWithdrawBid={onWithdrawBid}
-            getCurrentBid={getCurrentBid}
-          />
-        </div>
-        <RemainingTime
-          auction={auction}
-          isOpen={isOpen}
-        />
+        )}
       </div>
     </Drawer>
   );

@@ -8,6 +8,7 @@ import "hardhat-gas-reporter";
 import "solidity-coverage";
 
 import NFNovelDeployment from "./deployments/NFNovel.json";
+import { BigNumber } from "ethers";
 
 dotenv.config();
 
@@ -20,6 +21,43 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
     console.log(account.address);
   }
 });
+
+// NOTE: fix import from utils, circular import from hardhat/ethers ---> https://hardhat.org/errors/#HH9
+task("endPanelAuction", "Ends Panel Auction")
+  .addParam<number>("panelAuctionId", "auction to end")
+  .setAction(async (taskArgs: { panelAuctionId: number }, hre) => {
+    const panelAuctionId = taskArgs.panelAuctionId;
+
+    const nfnovel = await hre.ethers.getContractAt(
+      "NFNovel",
+      NFNovelDeployment.contractAddress
+    );
+
+    try {
+      const auctionEndTime = (await nfnovel.auctions(panelAuctionId)).endTime;
+
+      const currentBlockNumber = await hre.ethers.provider.getBlockNumber();
+      const currentBlock = await hre.ethers.provider.getBlock(
+        currentBlockNumber
+      );
+      const currentBlockTime = BigNumber.from(currentBlock.timestamp);
+      const blockTimeIncrement = auctionEndTime.sub(currentBlockTime);
+
+      if (blockTimeIncrement.gt(0)) {
+        const currentTimestamp = currentBlock.timestamp;
+        const nextBlockTimestamp = BigNumber.isBigNumber(blockTimeIncrement)
+          ? blockTimeIncrement.add(currentTimestamp).toNumber()
+          : currentTimestamp + blockTimeIncrement;
+
+        await hre.ethers.provider.send("evm_mine", [nextBlockTimestamp]);
+      }
+
+      await nfnovel.endPanelAuction(panelAuctionId);
+      console.log(`Auction [${panelAuctionId}] ended`);
+    } catch (error: any) {
+      console.log("failed to end auction", error.message);
+    }
+  });
 
 task("revealPage", "Reveals the page")
   .addParam<number>("page", "the page number to reveal")
