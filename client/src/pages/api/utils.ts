@@ -2,7 +2,7 @@ import { ethers } from "ethers";
 
 const provider = new ethers.providers.JsonRpcProvider();
 
-function getContract<TContract>(
+export function getContract<TContract>(
   contractAbi: ethers.ContractInterface,
   contractAddress: string,
 ) {
@@ -12,5 +12,3 @@ function getContract<TContract>(
     provider,
   ) as unknown as TContract;
 }
-
-export default getContract;

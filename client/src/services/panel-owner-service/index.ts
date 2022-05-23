@@ -1,16 +1,18 @@
 import axios from "axios";
+import { NFNovel } from "@contracts/types/NFNovel";
 
 import type { AxiosStatic } from "axios";
 import type { BigNumber } from "ethers";
 import type { PanelMetadata } from "src/types/token";
-import type { NFNovel } from "@contracts/types/NFNovel";
 
 export interface IPanelOwnerService {
   isPanelSold: (
     nfnovel: NFNovel,
     panelTokenId: BigNumber | number,
   ) => Promise<boolean>;
-  getOwnedPanelTokenIds: (address: string) => Promise<(BigNumber | number)[]>;
+  getOwnedPanelTokenIds: (
+    ownerAddress: string,
+  ) => Promise<(BigNumber | number)[]>;
   getRevealedPanelMetadata: (
     panelTokenId: BigNumber | number,
   ) => Promise<PanelMetadata>;
@@ -44,11 +46,11 @@ export const createPanelOwnerService = (
       // return isSold; // IS SOLD
     },
 
-    getOwnedPanelTokenIds: async (address) => {
-      const { data } = await apiRequest.get(`/api/panels/${address}/owned`);
+    getOwnedPanelTokenIds: async (ownerAddress) => {
+      const { data } = await apiRequest.get(
+        `/api/panels/${ownerAddress}/owned`,
+      );
 
-      // return []; // NOT OWNER
-      // return [1, 2]; // OWNER
       return data;
     },
 
