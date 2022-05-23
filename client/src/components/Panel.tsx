@@ -36,24 +36,38 @@ const Panel = (props: PanelProps) => {
   }, [nfnovel, panelTokenId]);
 
   const handleEndAuction = useCallback(
-    async (panelAuctionId: BigNumber) => {
-      if (!nfnovel) return;
-
-      setAuction((auction) => {
-        if (!auction) return;
-        if (!panelAuctionId.eq(auction.id)) return auction;
+    (panelAuctionId: BigNumber) =>
+      setAuction((currentAuction) => {
+        if (!currentAuction) return;
+        if (!panelAuctionId.eq(currentAuction.id)) return currentAuction;
 
         // cannot mutate state (readonly)
-        // return a new object merging auction with new state field value
-        return Object.assign({}, auction, { state: 2 });
-      });
-    },
-    [nfnovel],
+        // return a new object merging currentAuction with new state field value
+        return Object.assign({}, currentAuction, { state: 2 });
+      }),
+    [],
   );
 
-  // TODO: Set up and test listeners outside react
+  const handleBidRaised = useCallback(
+    (panelAuctionId: BigNumber, highestBidder: string, highestBid: BigNumber) =>
+      setAuction((currentAuction) => {
+        console.log("handleBidRaised", {
+          panelAuctionId: panelAuctionId.toString(),
+          highestBidder,
+          highestBid: highestBid.toString(),
+        });
+        if (!currentAuction) return;
+        if (!panelAuctionId.eq(currentAuction.id)) return currentAuction;
+
+        console.log("setting new highest bid and highest bidder");
+
+        return Object.assign({}, currentAuction, { highestBid, highestBidder });
+      }),
+    [],
+  );
+
   useEffect(() => {
-    const setUpAuctionListener = () => {
+    const setUpAuctionListeners = () => {
       if (!nfnovel) return;
 
       nfnovel.on(
@@ -61,20 +75,32 @@ const Panel = (props: PanelProps) => {
           .name,
         handleEndAuction,
       );
+
+      nfnovel.on(
+        nfnovel.interface.events["AuctionBidRaised(uint256,address,uint256)"]
+          .name,
+        handleBidRaised,
+      );
     };
 
-    setUpAuctionListener();
+    setUpAuctionListeners();
 
-    // return () => {
-    //   if (!nfnovel) return;
-    //   nfnovel.removeListener(
-    //     nfnovel.interface.events["AuctionEnded(uint256,address,uint256,string)"]
-    //       .name,
-    //     setAuctionEnded,
-    //   );
-    //   console.log("Listener ended");
-    // };
-  }, [nfnovel, handleEndAuction]);
+    return () => {
+      if (!nfnovel) return;
+
+      nfnovel.removeListener(
+        nfnovel.interface.events["AuctionEnded(uint256,address,uint256,string)"]
+          .name,
+        handleEndAuction,
+      );
+
+      nfnovel.removeListener(
+        nfnovel.interface.events["AuctionBidRaised(uint256,address,uint256)"]
+          .name,
+        handleBidRaised,
+      );
+    };
+  }, [nfnovel, handleBidRaised, handleEndAuction]);
 
   const openAuctionModal = () => !auctionIsOpen && setAuctionIsOpen(true);
   const closeAuctionModal = () => auctionIsOpen && setAuctionIsOpen(false);
@@ -86,8 +112,6 @@ const Panel = (props: PanelProps) => {
     try {
       const tx = await nfnovel.addToBid(auction.id, { value: amountInWei });
       await tx.wait();
-
-      setAuction(await nfnovel.auctions(auction.id));
 
       return true;
     } catch (error: any) {
@@ -101,7 +125,6 @@ const Panel = (props: PanelProps) => {
     }
   };
 
-  // TODO: implement calling mintPanel on nfnovel
   const handleMintPanel = async () => {
     try {
       const tx = await nfnovel.mintPanel(auction.id);
@@ -109,7 +132,7 @@ const Panel = (props: PanelProps) => {
 
       return true;
     } catch (error: any) {
-      console.error("withdrawBid failed", {
+      console.error("mintPanel failed", {
         panelTokenId,
         panelAuctionId: auction.id,
         error: error,
@@ -119,16 +142,12 @@ const Panel = (props: PanelProps) => {
     }
   };
 
-  // TODO: render the mintPanel button if
-  // auction.state == 2 (Ended) && connectedAccount.address == auction.highestBidder && ownerOf(panelTokenId) == address(0)
-
   const handleCheckBid = async () => {
     const bid = await nfnovel.checkBid(auction.id);
 
     return bid;
   };
 
-  // TODO: implement calling withdrawBid on nfnovel
   const handleWithdrawBid = async () => {
     try {
       const tx = await nfnovel.withdrawBid(auction.id);
