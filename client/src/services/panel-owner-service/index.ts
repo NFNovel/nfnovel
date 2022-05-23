@@ -29,33 +29,33 @@ export const createPanelOwnerService = (
 
   const PanelOwnerService: IPanelOwnerService = {
     isPanelSold: async (nfnovel, panelTokenId) => {
-      // try {
-      //   await nfnovel.ownerOf(panelTokenId);
+      try {
+        await nfnovel.ownerOf(panelTokenId);
 
-      //   return true;
-      // } catch {
-      //   return false;
-      // }
+        return true;
+      } catch {
+        return false;
+      }
 
       // return false; // NOT SOLD
-      const isSold = Math.random() < 0.5;
-      console.log({ panelTokenId, isSold });
+      // const isSold = Math.random() < 0.5;
+      // console.log({ panelTokenId, isSold });
 
-      return isSold; // IS SOLD
+      // return isSold; // IS SOLD
     },
 
     getOwnedPanelTokenIds: async (address) => {
-      // const { data } = await apiRequest.get(`/panels/${address}/owned`);
+      const { data } = await apiRequest.get(`/api/panels/${address}/owned`);
 
       // return []; // NOT OWNER
-      return [1, 2]; // OWNER
-      // return data;
+      // return [1, 2]; // OWNER
+      return data;
     },
 
     // FUTURE: set up authorization
     getRevealedPanelMetadata: async (panelTokenId) => {
       // const { data } = await apiRequest.get(
-      //   `/panels/revealed/${panelTokenId}/metadata`,
+      //   `/api/panels/revealed/${panelTokenId}/metadata`,
       // );
 
       return {
