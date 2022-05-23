@@ -46,8 +46,6 @@ function AuctionModal(props: AuctionModalProps) {
       `No bidders yet` :
       `Highest bidder: ${auction.highestBidder}`;
 
-  console.log("re-rendering", { auction });
-
   return (
     <Drawer
       isOpen={isOpen}

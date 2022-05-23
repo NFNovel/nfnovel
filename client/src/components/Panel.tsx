@@ -35,25 +35,32 @@ const Panel = (props: PanelProps) => {
     getPanelAuction();
   }, [nfnovel, panelTokenId]);
 
+  const handleEndAuction = useCallback(
+    async (panelAuctionId: BigNumber) => {
+      if (!nfnovel) return;
+
+      setAuction((auction) => {
+        if (!auction) return;
+        if (!panelAuctionId.eq(auction.id)) return auction;
+
+        // cannot mutate state (readonly)
+        // return a new object merging auction with new state field value
+        return Object.assign({}, auction, { state: 2 });
+      });
+    },
+    [nfnovel],
+  );
+
   // TODO: Set up and test listeners outside react
   useEffect(() => {
     const setUpAuctionListener = () => {
       if (!nfnovel) return;
-      nfnovel.once(
+
+      nfnovel.on(
         nfnovel.interface.events["AuctionEnded(uint256,address,uint256,string)"]
           .name,
-        async (panelAuctionId: BigNumber) => {
-          if (!auction || !nfnovel) return;
-          if (panelAuctionId !== auction.id) return;
-          setAuction(await nfnovel.auctions(panelAuctionId));
-
-          console.log("Auction ended", { auction });
-        },
+        handleEndAuction,
       );
-      console.log("Listener started", {
-        listeners: nfnovel.listeners,
-        listenerCounter: nfnovel.listenerCount,
-      });
     };
 
     setUpAuctionListener();
@@ -67,7 +74,7 @@ const Panel = (props: PanelProps) => {
     //   );
     //   console.log("Listener ended");
     // };
-  }, [nfnovel, panelTokenId]);
+  }, [nfnovel, handleEndAuction]);
 
   const openAuctionModal = () => !auctionIsOpen && setAuctionIsOpen(true);
   const closeAuctionModal = () => auctionIsOpen && setAuctionIsOpen(false);
