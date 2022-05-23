@@ -135,6 +135,21 @@ const BiddingForm = (props: {
     return currentBid && ethers.utils.formatEther(currentBid?.add(bidInWei));
   };
 
+  const totalBid = currentBid ?
+    parseFloat(ethers.utils.formatEther(bidInWei)) +
+      parseFloat(ethers.utils.formatEther(currentBid)) :
+    null;
+
+  const highestBid = ethers.utils.formatEther(auction.highestBid);
+
+  const notEnoughForBidding = currentBid && totalBid <= highestBid;
+
+  const isHighestBidder = auction.highestBidder === connectedAccount?.address;
+
+  console.log(auction.state);
+  console.log(notEnoughForBidding);
+  console.log(auction.state !== 1 || notEnoughForBidding);
+
   return (
     <div className="p-5 flex flex-wrap flex-col">
       <div className="p-5 flex flex-wrap flex-row">
@@ -160,17 +175,23 @@ const BiddingForm = (props: {
 
       <Button
         className="p-5"
-        text="Place Bid"
+        text={
+          notEnoughForBidding && !isHighestBidder ?
+            "Can't place bid (you need a little more)" :
+            "Place Bid"
+        }
         onClick={addToBid}
-        disabled={auction.state !== 1}
+        disabled={auction.state !== 1 || notEnoughForBidding}
       />
 
-      <Button
-        className="p-5"
-        text="Withdraw bid"
-        onClick={withdrawBid}
-        disabled={auction.state !== 1}
-      />
+      {!currentBid?.isZero() && !isHighestBidder ? (
+        <Button
+          className="p-5"
+          text="Withdraw bid"
+          onClick={withdrawBid}
+          disabled={auction.state !== 1}
+        />
+      ) : null}
     </div>
   );
 };
