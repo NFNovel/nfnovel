@@ -52,6 +52,8 @@ const WithNFNovel = (props: { children?: React.ReactNode }) => {
         NFNovelDeployment.network,
       );
 
+      // TODO: expose nfnovelEvents (connected to websocket provider) for listening to events
+
       setMetamaskProvider(provider);
       setNfnovel(
         new Contract(
