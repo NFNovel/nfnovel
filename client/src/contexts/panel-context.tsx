@@ -2,6 +2,7 @@ import { createContext, useContext, useEffect, useState } from "react";
 import { create as createIPFSClient } from "ipfs-core";
 import { Page } from "src/types/page";
 import { BigNumber } from "ethers";
+import PanelOwnerService from "src/services/panel-owner-service";
 
 import { NFNovelContext } from "./nfnovel-context";
 
@@ -16,12 +17,6 @@ export type PanelData = {
 };
 
 export type PanelContext = {
-  getPanelMetadata: (
-    panelTokenId: BigNumber | number,
-  ) => Promise<PanelMetadata | null>;
-  getPanelImageSource: (
-    panelTokenId: BigNumber | number,
-  ) => Promise<string | null>;
   getPagePanelsData: (page: Page) => Promise<PanelData[]>;
 };
 
@@ -31,7 +26,7 @@ export const PanelContext = createContext<PanelContext | null>(null);
 
 const WithPanelData = (props: { children?: React.ReactNode }) => {
   const { children } = props;
-  const { nfnovel } = useContext(NFNovelContext);
+  const { nfnovel, connectedAccount } = useContext(NFNovelContext);
 
   const [ipfsClient, setIpfsClient] = useState<IPFS | null>(null);
 
@@ -95,21 +90,20 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
   };
 
   const getPanelImageSource = async (
-    panelTokenId: BigNumber | number,
+    ipfsUri: ipfsURI,
   ): Promise<string | null> => {
-    const panelTokenMetadata = await getPanelMetadata(panelTokenId);
-    if (!panelTokenMetadata) return null;
+    if (!ipfsUri) return null;
 
     let panelImageBlob = new Blob();
     try {
       for await (const panelImageChunk of ipfsClient.cat(
         // NOTE: strip protocol to just get CID
-        stripIpfsProtocol(panelTokenMetadata.image),
+        stripIpfsProtocol(ipfsUri),
       )) {
         panelImageBlob = new Blob([panelImageBlob, panelImageChunk]);
       }
-    } catch {
-      console.error("failed to load panel image for", { panelTokenId });
+    } catch (error) {
+      console.error("failed to load panel image", { error });
 
       return null;
     }
@@ -121,18 +115,28 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
   const getPagePanelsData = async (page: Page): Promise<PanelData[]> => {
     const pagePanelsData = [];
     for (const panelTokenId of page.panelTokenIds) {
-      const metadata = await getPanelMetadata(panelTokenId);
-      const imageSource = await getPanelImageSource(panelTokenId);
-      pagePanelsData.push({ panelTokenId, metadata, imageSource });
+      const isSold = await PanelOwnerService.isPanelSold(nfnovel, panelTokenId);
+
+      const shouldRequestRevealedMetadata = !page.isRevealed && connectedAccount?.isPanelOwner && isSold;
+
+      const metadata = shouldRequestRevealedMetadata ?
+        await PanelOwnerService.getRevealedPanelMetadata(panelTokenId) :
+        await getPanelMetadata(panelTokenId);
+
+      const imageSource = await getPanelImageSource(metadata?.image);
+
+      pagePanelsData.push({
+        panelTokenId,
+        metadata,
+        imageSource,
+      });
     }
 
     return pagePanelsData;
   };
 
   return (
-    <PanelContext.Provider
-      value={{ getPanelMetadata, getPanelImageSource, getPagePanelsData }}
-    >
+    <PanelContext.Provider value={{ getPagePanelsData }}>
       {children}
     </PanelContext.Provider>
   );
