@@ -15,7 +15,7 @@ export interface IPanelOwnerService {
   ) => Promise<(BigNumber | number)[]>;
   getRevealedPanelMetadata: (
     panelTokenId: BigNumber | number,
-  ) => Promise<PanelMetadata>;
+  ) => Promise<PanelMetadata | null>;
 }
 
 export const createPanelOwnerService = (
@@ -38,12 +38,6 @@ export const createPanelOwnerService = (
       } catch {
         return false;
       }
-
-      // return false; // NOT SOLD
-      // const isSold = Math.random() < 0.5;
-      // console.log({ panelTokenId, isSold });
-
-      // return isSold; // IS SOLD
     },
 
     getOwnedPanelTokenIds: async (ownerAddress) => {
@@ -56,36 +50,11 @@ export const createPanelOwnerService = (
 
     // FUTURE: set up authorization
     getRevealedPanelMetadata: async (panelTokenId) => {
-      // const { data } = await apiRequest.get(
-      //   `/api/panels/revealed/${panelTokenId}/metadata`,
-      // );
+      const { data } = await apiRequest.get(
+        `/api/panels/revealed/${panelTokenId}/metadata`,
+      );
 
-      return {
-        name: "Batman-1-1",
-        external_url: "https://nfnovel.com/Batman",
-        description: "Batman Page 1, Panel 1",
-        image: "ipfs://QmZg3jt5X9X9ZGuoZ9gbYJKGWbYXonYQBKyf9DGv8GNpF5",
-        attributes: [
-          {
-            trait_type: "height",
-            value: 1,
-          },
-          {
-            trait_type: "width",
-            value: 1,
-          },
-          {
-            trait_type: "page",
-            value: 1,
-          },
-          {
-            trait_type: "panel",
-            value: 1,
-          },
-        ],
-      };
-
-      // return data;
+      return data;
     },
   };
 

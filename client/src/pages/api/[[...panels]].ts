@@ -4,7 +4,8 @@ import { NFNovel } from "@contracts/types/NFNovel";
 // NOTE: only available after running deploy script
 import NFNovelDeployment from "@contracts/deployments/NFNovel.json";
 
-import { getContract } from "./utils";
+import { getOwnedPanelTokenIds, loadRevealedPanelMetadata } from "./utils";
+import getContract from "./utils/get-contract";
 
 import type { NextApiRequest, NextApiResponse } from "next";
 
@@ -28,28 +29,23 @@ const handler = nc<PanelsPathRequest, NextApiResponse>({
 
 const basePath = "/api/panels";
 
-const getOwnedPanelTokenIds = async (
-  nfnovel: NFNovel,
-  ownerAddress: string,
-) => {
-  const filterTo = nfnovel.filters.Transfer(null, ownerAddress);
-
-  const result = await nfnovel.queryFilter(filterTo, -10, "latest");
-
-  return result.map((event) => event.args.tokenId.toNumber());
-};
-
-// getRevealedPanelMetadata
+// loadRevealedPanelMetadata
 handler.get(`${basePath}/revealed/:panelTokenId/metadata`, async (req, res) => {
-  console.log({ metadata: req });
-  res.json({ panelTokenId: req.params.panelTokenId });
+  const { panelTokenId } = req.params;
+
+  return res.json(await loadRevealedPanelMetadata(panelTokenId));
 });
 
 // getOwnedPanelTokenIds
 handler.get(`${basePath}/:ownerAddress/owned`, async (req, res) => {
   const { ownerAddress } = req.params;
 
-  res.json(await getOwnedPanelTokenIds(nfnovel, ownerAddress));
+  return res.json(await getOwnedPanelTokenIds(nfnovel, ownerAddress));
 });
 
 export default handler;
+
+// NOTE: may be needed for deployment
+// export const config = {
+//   unstable_includeFiles: ["src/panels"],
+// };
