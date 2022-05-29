@@ -1,11 +1,11 @@
 import { ethers, Contract, BigNumber } from "ethers";
 import React, { createContext, useState, useEffect } from "react";
-import NFNovelDeployment from "@contracts/deployments/NFNovel.json";
-import NFNovelContract from "@contracts/NFNovel/NFNovel.sol/NFNovel.json";
+import NFNovelDeployment from "@evm/deployments/NFNovel";
+import NFNovelContract from "@evm/NFNovel/NFNovel.sol/NFNovel";
 import PanelOwnerService from "src/services/panel-owner-service";
 
 import type { Signer } from "ethers";
-import type { NFNovel } from "@contracts/types/NFNovel";
+import type { NFNovel } from "@evm/types/NFNovel";
 import type { Web3Provider } from "@ethersproject/providers";
 
 export interface INFNovelContext {

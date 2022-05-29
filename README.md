@@ -29,7 +29,7 @@ in `.vscode/` there are some recommended workspace extensions and settings. you 
 the client `client/tsconfig.json` has aliases set up for importing:
 
 - `@styles/*`: any CSS in the `client/styles/` dir
-- `@contracts/*`: any contract ABI in `evm/artifacts/contracts/<ContractName.sol>/<ContractName>.json`
+- `@evm/*`: any contract ABI in `evm/artifacts/contracts/<ContractName.sol>/<ContractName>.json`
 
 > example
 
@@ -38,10 +38,9 @@ the client `client/tsconfig.json` has aliases set up for importing:
 import "@styles/globals.css";
 // CSS module
 import styles from "@styles/Home.module.css";
-// contract ABI
-import GreeterABI from "@contracts/Greeter.sol/Greeter.json";
+// contract ABI (.json extension is implicit from tsconfig path aliases)
+import GreeterABI from "@evm/Greeter.sol/Greeter";
 ```
-
 
 ### scripts
 
@@ -59,6 +58,7 @@ npm install
 ```
 
 2. run dev mode (compiles evm and runs next.js dev mode)
+
 - starts a local hardhat node
 - compiles and deploys the contracts (`evm/scripts/deploy.ts`) and stores their deployment records in `evm/deployments/<Contract>.json`
 - starts the client next.js dev server
