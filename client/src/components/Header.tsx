@@ -1,45 +1,52 @@
 import React from "react";
-import { useContext } from "react";
+import { useConnect } from "wagmi";
 import {
   Alignment,
   Button,
+  ButtonGroup,
   Navbar,
   NavbarDivider,
   NavbarGroup,
   NavbarHeading,
 } from "@blueprintjs/core";
-import { NFNovelContext } from "src/contexts/nfnovel-context";
-import { connectToMetamask } from "src/utils/connect-metamask";
+import useConnectedAccount from "src/hooks/use-connected-account";
+
+const ConnectAccountButtons = () => {
+  const {
+    error,
+    connect,
+    connectors,
+    isConnecting,
+    pendingConnector
+  } = useConnect();
+
+  return (
+    <ButtonGroup>
+      {connectors.map((connector) => (
+        <Button
+          disabled={!connector.ready}
+          key={connector.id}
+          onClick={() => connect(connector)}
+        >
+          {connector.name}
+          {!connector.ready && " (unsupported)"}
+          {isConnecting &&
+            connector.id === pendingConnector?.id &&
+            " (connecting)"}
+        </Button>
+      ))}
+
+      {error && <div>{error.message}</div>}
+    </ButtonGroup>
+  );
+};
 
 function Header() {
-  const {
-    connectedAccount,
-    metamaskProvider,
-    connectContractToSigner
-  } = useContext(NFNovelContext);
+  const connectedAccount = useConnectedAccount();
 
   const shortAccountAddress = connectedAccount?.address.substring(0, 6) +
     "..." +
     connectedAccount?.address.substring(37, 41);
-
-  const connectWallet = async () => {
-    if (!metamaskProvider) {
-      console.log("metamask not available");
-
-      return;
-    }
-    const connectedAccount = await connectToMetamask(metamaskProvider);
-    if (!connectedAccount) {
-      console.log("failed to connect to account");
-
-      return;
-    }
-
-    connectContractToSigner(connectedAccount);
-  };
-
-  // THINK: consider having 3 potential "buttons"
-  // connected (truncated address), connect, metamask not found
 
   return (
     <Navbar>
@@ -52,12 +59,7 @@ function Header() {
             text={shortAccountAddress}
           ></Button>
         ) : (
-          <Button
-            className="bp4-minimal"
-            text="Connect to MetaMask"
-            onClick={connectWallet}
-            disabled={!metamaskProvider}
-          ></Button>
+          <ConnectAccountButtons />
         )}
       </NavbarGroup>
     </Navbar>
