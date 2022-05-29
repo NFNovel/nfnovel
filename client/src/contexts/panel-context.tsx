@@ -4,6 +4,8 @@ import { Page } from "src/types/page";
 import { BigNumber } from "ethers";
 import PanelOwnerService from "src/services/panel-owner-service";
 
+import useConnectedAccount from "../hooks/use-connected-account";
+
 import { NFNovelContext } from "./nfnovel-context";
 
 import type { IPFS } from "ipfs-core";
@@ -26,7 +28,8 @@ export const PanelContext = createContext<PanelContext | null>(null);
 
 const WithPanelData = (props: { children?: React.ReactNode }) => {
   const { children } = props;
-  const { nfnovel, connectedAccount } = useContext(NFNovelContext);
+  const { nfnovel } = useContext(NFNovelContext);
+  const connectedAccount = useConnectedAccount();
 
   const [ipfsClient, setIpfsClient] = useState<IPFS | null>(null);
 
@@ -112,11 +115,15 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
     return URL.createObjectURL(panelImageBlob);
   };
 
+  // TODO: wrap in useCallback and change when connectedAccount.isPanelOwner changes (so images change)
+  // have Page depend on getPagePanelsData
   const getPagePanelsData = async (page: Page): Promise<PanelData[]> => {
     const pagePanelsData = [];
     for (const panelTokenId of page.panelTokenIds) {
       const isSold = await PanelOwnerService.isPanelSold(nfnovel, panelTokenId);
 
+      // if: the page is not yet publicly revealed, the connected account is a panel owner (at least 1 panel) and the panel has been sold (owned by any account)
+      // then: the user (owner) should be able  to see the revealed image(s)!
       const shouldRequestRevealedMetadata = !page.isRevealed && connectedAccount?.isPanelOwner && isSold;
 
       const metadata = shouldRequestRevealedMetadata ?
