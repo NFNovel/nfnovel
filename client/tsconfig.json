@@ -5,11 +5,11 @@
       "@styles/*": [
         "styles/*"
       ],
-      "@evm/*": [
-        "../evm/artifacts/contracts/*.json"
+      "@evm/contracts/*": [
+        "../evm/artifacts/contracts/*"
       ],
       "@evm/deployments/*": [
-        "../evm/deployments/*.json"
+        "../evm/deployments/*"
       ],
       "@evm/types/*": [
         "../evm/typechain/*"

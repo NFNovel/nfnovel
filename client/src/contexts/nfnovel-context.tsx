@@ -1,7 +1,7 @@
 import { ethers, Contract, BigNumber } from "ethers";
 import React, { createContext, useState, useEffect } from "react";
-import NFNovelDeployment from "@evm/deployments/NFNovel";
-import NFNovelContract from "@evm/NFNovel/NFNovel.sol/NFNovel";
+import NFNovelDeployment from "@evm/deployments/NFNovel.json";
+import NFNovelContract from "@evm/contracts/NFNovel/NFNovel.sol/NFNovel.json";
 import PanelOwnerService from "src/services/panel-owner-service";
 
 import type { Signer } from "ethers";

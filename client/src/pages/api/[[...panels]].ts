@@ -1,8 +1,8 @@
 import nc from "next-connect";
-import NFNovelContract from "@evm/NFNovel/NFNovel.sol/NFNovel";
+import NFNovelContract from "@evm/contracts/NFNovel/NFNovel.sol/NFNovel.json";
 import { NFNovel } from "@evm/types/NFNovel";
 // NOTE: only available after running deploy script
-import NFNovelDeployment from "@evm/deployments/NFNovel";
+import NFNovelDeployment from "@evm/deployments/NFNovel.json";
 
 import { getOwnedPanelTokenIds, loadRevealedPanelMetadata } from "./utils";
 import getContract from "./utils/get-contract";
