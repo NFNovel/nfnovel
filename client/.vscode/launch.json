@@ -1,0 +1,32 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "name": "Next.js: debug server-side",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run debug",
+      "localRoot": "${workspaceFolder}/src"
+    },
+    {
+      "name": "Next.js: debug client-side",
+      "type": "chrome",
+      "webRoot": "${workspaceFolder}/src",
+      "request": "attach",
+      "url": "http://localhost:3000/*",
+      "targetSelection": "pick",
+    },
+    {
+      "name": "Next.js: debug full stack",
+      "type": "node-terminal",
+      "request": "launch",
+      "command": "npm run debug",
+      "localRoot": "${workspaceFolder}/src",
+      "serverReadyAction": {
+        "pattern": "started server on .+, url: (https?://.+)",
+        "uriFormat": "%s",
+        "action": "debugWithChrome"
+      }
+    }
+  ]
+}
