@@ -5,6 +5,7 @@ import { useCallback, useEffect, useState } from "react";
 
 import Auction from "./Auction";
 import { buildAuctionFilters } from "./utils";
+import useAuctionable from "./use-auctionable";
 
 import type { Auction as AuctionType } from "src/types/auction";
 import type { Auctionable } from "@evm/types/Auctionable";
@@ -30,6 +31,7 @@ type AuctionManagerProps = {
   };
   auctionId: BigNumber | number;
   tokenData: AuctionableTokenData;
+  onTransferToken: () => Promise<boolean>;
 };
 
 // THINK: how to manage locking UI while waiting for event confirmation?
@@ -38,178 +40,24 @@ const AuctionManager = (props: AuctionManagerProps) => {
   const {
     auctionId,
     tokenData,
+    onTransferToken,
     connectedAccount,
     auctionableContract,
     auctionableContractConfig,
   } = props;
 
-  const [auction, setAuction] = useState<AuctionType>();
-  // TODO: pass down to children to lock UI while waiting for event update
-  const [waitForConfirmation, setWaitForConfirmation] = useState(false);
-  const [currentConnectedAccountBid, setCurrentConnectedAccountBid] = useState(
-    BigNumber.from(0),
-  );
-
-  /**
-   * EFFECTS
-   */
-
-  useEffect(() => {
-    const loadAuction = async () => {
-      if (auction) return;
-      // only load the auction once, afterwards it will be kept in sync with event listeners
-      setAuction(await auctionableContract.auctions(auctionId));
-    };
-
-    loadAuction();
-  }, [auction, auctionableContract, auctionId]);
-
-  useEffect(() => {
-    const loadCurrentBid = async () => {
-      if (!auctionableContract.signer) return;
-
-      setCurrentConnectedAccountBid(
-        await auctionableContract.checkBid(auctionId),
-      );
-    };
-
-    loadCurrentBid();
-    // NOTE: will reload currentBid if connectedAccount changes (causing contract to update)
-  }, [auctionId, auctionableContract]);
-
-  /**
-   * END EFFECTS
-   */
-
-  /**
-   * HANDLERS
-   */
-
-  // THINK: ref to useAddToBid(auctionableContract, auctionId) => { addToBid: (amountInWei) => boolean, isWaitingForConfirmation, ... }
-  const handleAddToBid = useCallback(
-    async (amountInWei: BigNumber) => {
-      try {
-        setWaitForConfirmation(true);
-        await auctionableContract.addToBid(auctionId, { value: amountInWei });
-
-        return true;
-      } catch (error: any) {
-        console.error("addToBid failed", {
-          auctionId,
-          error: error,
-        });
-
-        return false;
-      } finally {
-        setWaitForConfirmation(false);
-      }
-    },
-    [auctionId, auctionableContract],
-  );
-
-  const handleWithdrawBid = useCallback(async () => {
-    try {
-      setWaitForConfirmation(true);
-      await auctionableContract.withdrawBid(auctionId);
-
-      return true;
-    } catch (error: any) {
-      console.error("withdrawBid failed", {
-        auctionId,
-        error: error,
-      });
-
-      return false;
-    } finally {
-      setWaitForConfirmation(false);
-    }
-  }, [auctionId, auctionableContract]);
-
-  // REMOVE: not responsibility of auction
-  const handleMintToken = async () => {
-    console.log("mint token called");
-
-    return true;
-  };
-
-  /**
-   * END HANDLERS
-   */
-
-  /**
-   * EVENT LISTENERS
-   */
-
   const {
-    filterAuctionEnded,
-    filterAuctionBidRaised,
-    filterAuctionBidWithdrawn,
-  } = buildAuctionFilters(auctionableContract, auctionId);
-
-  useContractEvent(
+    auction,
+    handleAddToBid,
+    handleWithdrawBid,
+    transactionPending,
+    currentConnectedAccountBid,
+  } = useAuctionable({
+    auctionId,
+    auctionableContract,
     auctionableContractConfig,
-    filterAuctionEnded,
-    () =>
-      setAuction((currentAuction) =>
-        Object.assign({}, currentAuction, { state: 2 }),
-      ),
-    { once: true },
-  );
-
-  const handleAuctionBidRaised = useCallback(
-    // NOTE: bug https://github.com/tmm/wagmi/issues/529
-    // causes all event args to show up as single array
-    // (auctionId: BigNumber, highestBidder: string, highestBid: BigNumber) => {
-    (eventArgs: unknown[]) => {
-      const [auctionId, highestBidder, highestBid, event] = eventArgs;
-      if (connectedAccount?.address === highestBidder) {
-        setCurrentConnectedAccountBid(highestBid as BigNumber);
-      }
-
-      console.log("auction bid raised", {
-        auctionId,
-        highestBidder,
-        highestBid,
-      });
-
-      setAuction((currentAuction) =>
-        Object.assign({}, currentAuction, { highestBid, highestBidder }),
-      );
-    },
-    // NOTE: current bid is relative to the connected account (which can change)
-    // useCallback with dep on connected account to always sync currentConnectedAccountBid with correct account
-    [connectedAccount],
-  );
-
-  useContractEvent(
-    auctionableContractConfig,
-    filterAuctionBidRaised,
-    handleAuctionBidRaised,
-  );
-
-  const handleAuctionBidWithdrawn = useCallback(
-    // NOTE: bug https://github.com/tmm/wagmi/issues/529
-    // causes all event args to show up as single array
-    // (auctionId: BigNumber, highestBidder: string, highestBid: BigNumber) => {
-    (eventArgs: unknown[]) => {
-      const [auctionId, withdrawnBidder, withdrawnBid, event] = eventArgs;
-      if (connectedAccount?.address === withdrawnBidder) {
-        setCurrentConnectedAccountBid(BigNumber.from(0));
-      }
-    },
-    // NOTE: see note above
-    [connectedAccount],
-  );
-
-  useContractEvent(
-    auctionableContractConfig,
-    filterAuctionBidWithdrawn,
-    handleAuctionBidWithdrawn,
-  );
-
-  /**
-   * END EVENT LISTENERS
-   */
+    connectedAccountAddress: connectedAccount?.address,
+  });
 
   if (!auction) return <Spinner />;
 
@@ -220,7 +68,8 @@ const AuctionManager = (props: AuctionManagerProps) => {
       onAddToBid={handleAddToBid}
       onWithdrawBid={handleWithdrawBid}
       // REMOVE: not responsibility of auction
-      onMintPanel={handleMintToken}
+      onMintPanel={onTransferToken}
+      // transactionPending={transactionPending}
       {...tokenData}
     />
   );
