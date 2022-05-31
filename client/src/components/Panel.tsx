@@ -3,7 +3,7 @@ import { Button, Drawer, Position, Spinner } from "@blueprintjs/core";
 import useNFNovel from "src/hooks/use-nfnovel";
 import useConnectedAccount from "src/hooks/use-connected-account";
 
-import AuctionManager from "./AuctionModal/AuctionManager";
+import AuctionManager from "./Auction/AuctionManager";
 
 import type { BigNumber } from "ethers";
 import type { PanelData } from "src/contexts/panel-context";

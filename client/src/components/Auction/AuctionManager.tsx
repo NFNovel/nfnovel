@@ -4,11 +4,12 @@ import { Spinner } from "@blueprintjs/core";
 import { useCallback, useEffect, useState } from "react";
 
 import Auction from "./Auction";
+import { buildAuctionFilters } from "./utils";
 
 import type { Auction as AuctionType } from "src/types/auction";
 import type { Auctionable } from "@evm/types/Auctionable";
 import type { IERC721TokenMetadata } from "src/types/token";
-import type { ContractInterface, EventFilter } from "ethers";
+import type { ContractInterface } from "ethers";
 import type { IConnectedAccount } from "src/contexts/connected-account-context";
 
 // TODO: clean up this file (types, utils etc)
@@ -30,26 +31,6 @@ type AuctionManagerProps = {
   auctionId: BigNumber | number;
   tokenData: AuctionableTokenData;
 };
-
-type HandledAuctionableEvent =
-  | "AuctionBidRaised"
-  | "AuctionBidWithdrawn"
-  | "AuctionEnded";
-
-type AuctionableEventFilters = {
-  [filter in `filter${HandledAuctionableEvent}`]: EventFilter;
-};
-
-const buildAuctionFilters = (
-  auctionableContract: Auctionable,
-  auctionId: BigNumber | number,
-): AuctionableEventFilters => ({
-  filterAuctionBidRaised:
-    auctionableContract.filters.AuctionBidRaised(auctionId),
-  filterAuctionBidWithdrawn:
-    auctionableContract.filters.AuctionBidWithdrawn(auctionId),
-  filterAuctionEnded: auctionableContract.filters.AuctionEnded(auctionId),
-});
 
 // THINK: how to manage locking UI while waiting for event confirmation?
 // THINK: how to indicate success/failure?
