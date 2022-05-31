@@ -1,9 +1,7 @@
 import { Button, NumericInput } from "@blueprintjs/core";
 import { BigNumber, ethers } from "ethers";
-import { useContext, useState } from "react";
-import { NFNovelContext } from "src/contexts/nfnovel-context";
-import { connectToMetamask } from "src/utils/connect-metamask";
-import { useEffect } from "react";
+import { useState } from "react";
+import useConnectedAccount from "src/hooks/use-connected-account";
 
 import type { AuctionModalProps } from ".";
 import type { Auction } from "src/types/auction";
@@ -21,11 +19,7 @@ const BiddingForm = (props: {
     onWithdrawBid
   } = props;
 
-  const {
-    connectedAccount,
-    metamaskProvider,
-    connectContractToSigner
-  } = useContext(NFNovelContext);
+  const { connectedAccount, ConnectAccountButtons } = useConnectedAccount();
 
   // NOTE: this should not be bidInWei, this should represent the amount to ADD to the bid
   const [bidInWei, setBidInWei] = useState(BigNumber.from(0));
@@ -52,53 +46,9 @@ const BiddingForm = (props: {
     const success = await onWithdrawBid();
   };
 
-  const connectAccount = async () => {
-    if (!metamaskProvider) return null;
-
-    const connectedAccount = await connectToMetamask(metamaskProvider);
-    if (connectedAccount) connectContractToSigner(connectedAccount);
-  };
-
-  if (!metamaskProvider) return null;
-
-  /**
-       * 
-       * 
-       * 
-    [currentBid] | [addToBid input] | [total bid (currentBid + addToBid input value)]
-    [withdraw bid {currentBid}] | [placeBid]
-
-    [addToBid input]:
-    - min (minimum input): highestBid + minimumBidIncrement
-    - stepSize: minimumBidIncrement
-    - value: highestBid + minimumBidIncrement
-      - when component renders set bidInWei to  (highestBid + minimumBidIncrement)
-      - after submitting bid set (highestBid + minimumBidIncrement) 
-    - auction.minimumBidIncrement
-
-    [withdraw bid button]:
-    - disabled if connectedAccount.address == highestBidder
-    - disabled if their currentBid is 0
-    - button text should be `Withdraw ${currentBid}`
-
-    when the auction ends:
-
-    - if connectedAccount.address == highestBidder then present [mint panel button] => mintPanel(panelTokenId)
-    - if not then present [withdraw button]
-    - so (remove the add to bid input/button)
-      * 
-      * 
-      */
-
-  if (!connectedAccount)
-    return (
-      <Button
-        className="p-5"
-        text="Connect to Metamask"
-        onClick={connectAccount}
-        disabled={!metamaskProvider}
-      />
-    );
+  if (!connectedAccount) {
+    return <ConnectAccountButtons />;
+  }
 
   const handleTotalBid = () => {
     return currentBid && ethers.utils.formatEther(currentBid?.add(bidInWei));

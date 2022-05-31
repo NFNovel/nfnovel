@@ -1,8 +1,8 @@
 /* eslint-disable @next/next/no-img-element */
-import { useContext, useEffect, useState } from "react";
+import { useState } from "react";
 import { BigNumber, ethers } from "ethers";
 import { Button, Drawer, Position } from "@blueprintjs/core";
-import { NFNovelContext } from "src/contexts/nfnovel-context";
+import useConnectedAccount from "src/hooks/use-connected-account";
 
 import BiddingForm from "./BiddingForm";
 import RemainingTime from "./RemainingTime";
@@ -15,7 +15,6 @@ export type AuctionModalProps = {
   auction: Auction;
   currentBid: BigNumber;
   imageSource: string;
-  hasConnectedAccount: boolean;
   metadata: IERC721TokenMetadata;
   onAddToBid: (amountInWei: BigNumber) => Promise<boolean>;
   onClose: () => void;
@@ -36,7 +35,7 @@ function AuctionModal(props: AuctionModalProps) {
     onMintPanel,
   } = props;
 
-  const { connectedAccount } = useContext(NFNovelContext);
+  const { connectedAccount } = useConnectedAccount();
   const [mintSuccessful, setMintSuccessul] = useState<boolean>();
   const [withdrawSuccessful, setWithdrawSuccessful] = useState<boolean>();
 
@@ -49,8 +48,6 @@ function AuctionModal(props: AuctionModalProps) {
     const success = await onWithdrawBid();
     setWithdrawSuccessful(success);
   };
-
-  if (!auction) return null;
 
   const highestBidderMessage = auction.highestBidder === connectedAccount?.address ?
     "You are the highest bidder!" :
