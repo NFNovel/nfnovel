@@ -1,46 +1,47 @@
-import { useAccount } from "wagmi";
-import { useEffect, useState } from "react";
-import PanelOwnerService from "src/services/panel-owner-service";
+import { useConnect } from "wagmi";
+import { useContext } from "react";
+import { ButtonGroup, Button } from "@blueprintjs/core";
+import { ConnectedAccountContext } from "src/contexts/connected-account-context";
 
-import type { BigNumber } from "ethers";
+import type { IConnectedAccount } from "src/contexts/connected-account-context";
 
-export interface IConnectedAccount {
-  address: string;
-  isPanelOwner: boolean;
-  ownedPanelTokenIds: (BigNumber | number)[];
-}
+const ConnectAccountButtons = () => {
+  const {
+    error,
+    connect,
+    connectors,
+    isConnecting,
+    pendingConnector
+  } = useConnect();
 
-const useConnectedAccount = (): IConnectedAccount | null => {
-  const { data: account } = useAccount();
-  const [connectedAccount, setConnectedAccount] = useState<IConnectedAccount | null>(null);
+  return (
+    <ButtonGroup>
+      {connectors.map((connector) => (
+        <Button
+          disabled={!connector.ready}
+          key={connector.id}
+          onClick={() => connect(connector)}
+        >
+          {connector.name}
+          {!connector.ready && " (unsupported)"}
+          {isConnecting &&
+            connector.id === pendingConnector?.id &&
+            " (connecting)"}
+        </Button>
+      ))}
 
-  useEffect(() => {
-    const updateConnectedAccount = async () => {
-      if (!account || !account.address) return;
+      {error && <div>{error.message}</div>}
+    </ButtonGroup>
+  );
+};
 
-      const { address } = account;
+const useConnectedAccount = (): {
+  connectedAccount: IConnectedAccount | null;
+  ConnectAccountButtons: () => JSX.Element;
+} => {
+  const { connectedAccount } = useContext(ConnectedAccountContext);
 
-      console.log("updating connected account");
-
-      const ownedPanelTokenIds = await PanelOwnerService.getOwnedPanelTokenIds(
-        address,
-      );
-
-      const connectedAccount: IConnectedAccount = {
-        address,
-        ownedPanelTokenIds,
-        isPanelOwner: ownedPanelTokenIds.length > 0,
-      };
-
-      console.log({ connectedAccount });
-
-      setConnectedAccount(connectedAccount);
-    };
-
-    updateConnectedAccount();
-  }, [account]);
-
-  return connectedAccount;
+  return { connectedAccount, ConnectAccountButtons };
 };
 
 export default useConnectedAccount;
