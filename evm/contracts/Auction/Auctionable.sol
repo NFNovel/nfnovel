@@ -11,29 +11,33 @@ abstract contract Auctionable {
     using Counters for Counters.Counter;
     using AuctionManagement for Auction;
 
+    // NOTE: event params must be indexed to be used in event filters
     event AuctionStarted(
-        uint256 auctionId,
-        uint256 tokenId,
-        uint256 startingValue,
-        uint256 endTime
+        uint256 indexed auctionId,
+        uint256 indexed tokenId,
+        uint256 indexed endTime,
+        uint256 startingValue
     );
 
     event AuctionEnded(
-        uint256 auctionId,
+        uint256 indexed auctionId,
         address winner,
-        uint256 finalValue,
-        string reason
+        uint256 finalValue
     );
 
-    event AuctionCancelled(uint256 auctionId);
+    event AuctionCancelled(uint256 indexed auctionId);
 
     event AuctionBidRaised(
-        uint256 auctionId,
-        address highestBidder,
-        uint256 highestBid
+        uint256 indexed auctionId,
+        address indexed highestBidder,
+        uint256 indexed highestBid
     );
 
-    event AuctionBidWithdrawn(uint256 auctionId, address bidder, uint256 bid);
+    event AuctionBidWithdrawn(
+        uint256 indexed auctionId,
+        address indexed withdrawnBidder,
+        uint256 indexed withdrawnBid
+    );
 
     event AuctionDefaultsUpdated(AuctionSettings newDefaults);
 
@@ -127,13 +131,13 @@ abstract contract Auctionable {
         emit AuctionEnded(
             auction.id,
             auction.highestBidder,
-            auction.highestBid,
-            auction.state == AuctionStates.Ended ? "time" : "cancelled"
+            auction.highestBid
         );
     }
 
-    function _cancelAuction(uint256 auctionId) internal returns (bool) {
-        return _getAuction(auctionId).cancel();
+    function _cancelAuction(uint256 auctionId) internal returns (bool success) {
+        success = _getAuction(auctionId).cancel();
+        emit AuctionCancelled(auctionId);
     }
 
     function _getAuction(uint256 auctionId)
