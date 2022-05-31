@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import { Button, Spinner } from "@blueprintjs/core";
+import { Button, Drawer, Position, Spinner } from "@blueprintjs/core";
 import useNFNovel from "src/hooks/use-nfnovel";
 import useConnectedAccount from "src/hooks/use-connected-account";
 
@@ -23,6 +23,9 @@ const Panel = (props: PanelProps) => {
   const { nfnovel, nfnovelContractConfig } = useNFNovel();
   const [panelAuctionId, setPanelAuctionId] = useState<BigNumber>();
   const [auctionIsOpen, setAuctionIsOpen] = useState<boolean>(false);
+
+  // TODO: have state to determine if mint button should be presented
+  // lookup auction(panelAuctionId).[state is ended, highestBidder is connectedAccount] && ownerOf(panelTokenId) is address 0
 
   useEffect(() => {
     const loadPanelAuctionId = async () => {
@@ -69,18 +72,32 @@ const Panel = (props: PanelProps) => {
             src={imageSource}
             className="w-full h-48 rounded-t-md"
           />
-          <AuctionManager
-            auctionId={panelAuctionId}
-            auctionableContract={nfnovel}
-            connectedAccount={connectedAccount}
-            auctionableContractConfig={nfnovelContractConfig}
-            tokenData={{
-              metadata,
-              imageSource,
-              tokenId: panelTokenId,
-            }}
-            modalProps={{ isOpen: auctionIsOpen, onClose: closeAuctionModal }}
-          />
+
+          <Drawer
+            isOpen={auctionIsOpen}
+            title="Place your Bid for this Panel"
+            icon="info-sign"
+            position={Position.BOTTOM}
+            canEscapeKeyClose={true}
+            canOutsideClickClose={true}
+            enforceFocus={true}
+            autoFocus={true}
+            onClose={closeAuctionModal}
+            usePortal={true}
+            hasBackdrop={true}
+          >
+            <AuctionManager
+              auctionId={panelAuctionId}
+              auctionableContract={nfnovel}
+              connectedAccount={connectedAccount}
+              auctionableContractConfig={nfnovelContractConfig}
+              tokenData={{
+                metadata,
+                imageSource,
+                tokenId: panelTokenId,
+              }}
+            />
+          </Drawer>
         </Button>
       </div>
     </article>

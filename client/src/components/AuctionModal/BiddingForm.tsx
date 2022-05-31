@@ -3,7 +3,7 @@ import { BigNumber, ethers } from "ethers";
 import { useState } from "react";
 import useConnectedAccount from "src/hooks/use-connected-account";
 
-import type { AuctionModalProps } from ".";
+import type { AuctionModalProps } from "./Auction";
 import type { Auction } from "src/types/auction";
 
 const BiddingForm = (props: {

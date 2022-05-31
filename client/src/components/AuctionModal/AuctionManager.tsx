@@ -3,9 +3,9 @@ import { useContractEvent } from "wagmi";
 import { Spinner } from "@blueprintjs/core";
 import { useCallback, useEffect, useState } from "react";
 
-import AuctionModal, { AuctionModalProps } from ".";
+import Auction from "./Auction";
 
-import type { Auction } from "src/types/auction";
+import type { Auction as AuctionType } from "src/types/auction";
 import type { Auctionable } from "@evm/types/Auctionable";
 import type { IERC721TokenMetadata } from "src/types/token";
 import type { ContractInterface, EventFilter } from "ethers";
@@ -29,11 +29,6 @@ type AuctionManagerProps = {
   };
   auctionId: BigNumber | number;
   tokenData: AuctionableTokenData;
-  // NOTE: temporary, move modal wrapper to AuctionManager
-  modalProps: {
-    isOpen: AuctionModalProps["isOpen"];
-    onClose: AuctionModalProps["onClose"];
-  };
 };
 
 type HandledAuctionableEvent =
@@ -62,13 +57,12 @@ const AuctionManager = (props: AuctionManagerProps) => {
   const {
     auctionId,
     tokenData,
-    modalProps,
     connectedAccount,
     auctionableContract,
     auctionableContractConfig,
   } = props;
 
-  const [auction, setAuction] = useState<Auction>();
+  const [auction, setAuction] = useState<AuctionType>();
   // TODO: pass down to children to lock UI while waiting for event update
   const [waitForConfirmation, setWaitForConfirmation] = useState(false);
   const [currentConnectedAccountBid, setCurrentConnectedAccountBid] = useState(
@@ -239,7 +233,7 @@ const AuctionManager = (props: AuctionManagerProps) => {
   if (!auction) return <Spinner />;
 
   return (
-    <AuctionModal
+    <Auction
       auction={auction}
       currentBid={currentConnectedAccountBid}
       onAddToBid={handleAddToBid}
@@ -247,7 +241,6 @@ const AuctionManager = (props: AuctionManagerProps) => {
       // REMOVE: not responsibility of auction
       onMintPanel={handleMintToken}
       {...tokenData}
-      {...modalProps}
     />
   );
 };
