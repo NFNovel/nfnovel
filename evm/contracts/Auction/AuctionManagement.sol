@@ -71,6 +71,7 @@ library AuctionManagement {
 
     function cancel(Auction storage auction) internal returns (bool) {
         _endAuction(auction, AuctionStates.Cancelled);
+
         return auction.state == AuctionStates.Cancelled;
     }
 
@@ -103,7 +104,6 @@ library AuctionManagement {
     }
 
     function _confirmAuctionIsActive(Auction storage auction) private view {
-        // check and end the auction (changing state to Ended) first
         if (block.timestamp >= auction.endTime) revert AuctionNotActive();
     }
 
@@ -123,6 +123,10 @@ library AuctionManagement {
         uint256 withdrawalValue
     ) private view {
         if (withdrawalValue == 0) revert NoBidToWithdraw();
-        if (auction.highestBidder == bidder) revert CannotWithdrawHighestBid();
+        if (
+            auction.highestBidder == bidder &&
+            // only allow highest bidder to withdraw if auction has been cancelled
+            auction.state != AuctionStates.Cancelled
+        ) revert CannotWithdrawHighestBid();
     }
 }
