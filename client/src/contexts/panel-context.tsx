@@ -1,12 +1,11 @@
-import { createContext, useContext, useEffect, useState } from "react";
+import { createContext, useEffect, useState } from "react";
 import { create as createIPFSClient } from "ipfs-core";
 import { Page } from "src/types/page";
 import { BigNumber } from "ethers";
 import PanelOwnerService from "src/services/panel-owner-service";
+import useNFNovel from "src/hooks/use-nfnovel";
 
 import useConnectedAccount from "../hooks/use-connected-account";
-
-import { NFNovelContext } from "./nfnovel-context";
 
 import type { IPFS } from "ipfs-core";
 import type { PanelMetadata } from "src/types/token";
@@ -26,10 +25,11 @@ const stripIpfsProtocol = (ipfsURI: ipfsURI) => ipfsURI.replace("ipfs://", "");
 
 export const PanelContext = createContext<PanelContext | null>(null);
 
+// TODO: refactor into IPFSProvider and usePanelData hook
 const WithPanelData = (props: { children?: React.ReactNode }) => {
   const { children } = props;
-  const { nfnovel } = useContext(NFNovelContext);
-  const connectedAccount = useConnectedAccount();
+  const { nfnovel } = useNFNovel();
+  const { connectedAccount } = useConnectedAccount();
 
   const [ipfsClient, setIpfsClient] = useState<IPFS | null>(null);
 

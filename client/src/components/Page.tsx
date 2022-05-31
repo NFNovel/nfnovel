@@ -1,14 +1,14 @@
 /* eslint-disable @next/next/no-img-element */
 import { Spinner } from "@blueprintjs/core";
 import { useContext, useEffect, useState } from "react";
-import { NFNovelContext } from "src/contexts/nfnovel-context";
 import { PanelData, PanelContext } from "src/contexts/panel-context";
+import useNFNovel from "src/hooks/use-nfnovel";
 
 import Panel from "./Panel";
 
-import type { Page } from "src/types/page";
+import type { Page as PageType } from "src/types/page";
 
-function Page(props: { pageData: Page }) {
+function Page(props: { pageData: PageType }) {
   const pageData = props.pageData;
 
   const parsedPageData = {
@@ -33,7 +33,8 @@ function Page(props: { pageData: Page }) {
    *
    * discuss remaining steps
    */
-  const { nfnovel } = useContext(NFNovelContext);
+  const { nfnovel } = useNFNovel();
+
   const panelContext = useContext(PanelContext);
 
   const [pagePanelsData, setpagePanelsData] = useState<PanelData[] | null>(

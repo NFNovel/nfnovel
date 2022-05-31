@@ -2,8 +2,10 @@ import "@styles/globals.css";
 
 import { chain, configureChains, createClient, WagmiConfig } from "wagmi";
 import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
-import WithNFNovel from "src/contexts/nfnovel-context";
 import WithPanelData from "src/contexts/panel-context";
+import ConnectedAccountProvider from "src/contexts/connected-account-context";
+
+import type { AppProps } from "next/app";
 
 const {
   chains,
@@ -30,19 +32,17 @@ const {
 const wagmiClient = createClient({
   provider,
   webSocketProvider,
-  autoConnect: false,
+  autoConnect: true,
 });
-
-import type { AppProps } from "next/app";
 
 function MyApp({ Component, pageProps }: AppProps) {
   return (
     <WagmiConfig client={wagmiClient}>
-      <WithNFNovel>
+      <ConnectedAccountProvider>
         <WithPanelData>
           <Component {...pageProps} />;
         </WithPanelData>
-      </WithNFNovel>
+      </ConnectedAccountProvider>
     </WagmiConfig>
   );
 }
