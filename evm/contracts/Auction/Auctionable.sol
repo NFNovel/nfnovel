@@ -11,37 +11,75 @@ abstract contract Auctionable {
     using Counters for Counters.Counter;
     using AuctionManagement for Auction;
 
+    // NOTE: event params must be indexed to be used in event filters
     event AuctionStarted(
-        uint256 auctionId,
-        uint256 tokenId,
-        uint256 startingValue,
-        uint256 endTime
+        uint256 indexed auctionId,
+        uint256 indexed tokenId,
+        uint256 indexed endTime,
+        uint256 startingValue
     );
 
     event AuctionEnded(
-        uint256 auctionId,
+        uint256 indexed auctionId,
         address winner,
-        uint256 finalValue,
-        string reason
+        uint256 finalValue
     );
 
-    event AuctionCancelled(uint256 auctionId);
+    event AuctionCancelled(uint256 indexed auctionId);
 
     event AuctionBidRaised(
-        uint256 auctionId,
-        address highestBidder,
-        uint256 highestBid
+        uint256 indexed auctionId,
+        address indexed highestBidder,
+        uint256 indexed highestBid
     );
 
-    event AuctionBidWithdrawn(uint256 auctionId, address bidder, uint256 bid);
+    event AuctionBidWithdrawn(
+        uint256 indexed auctionId,
+        address indexed withdrawnBidder,
+        uint256 indexed withdrawnValue
+    );
 
     event AuctionDefaultsUpdated(AuctionSettings newDefaults);
 
+    event AuctionedValueWithdrawn(
+        address indexed withdrawer,
+        uint256 indexed withdrawnValue
+    );
+
     error AuctionNotFound();
+    error WithdrawMoreThanAvailable();
 
     Counters.Counter private _auctionIds;
 
     mapping(uint256 => Auction) public auctions;
+
+    // TODO: test
+    uint256 public withdrawableAuctionedValue;
+
+    // TODO: test
+    function withdrawAuctionedValueTo(address to, uint256 withdrawAmount)
+        internal
+        returns (bool success)
+    {
+        if (withdrawAmount > withdrawableAuctionedValue)
+            revert WithdrawMoreThanAvailable();
+
+        withdrawableAuctionedValue -= withdrawAmount;
+
+        (success, ) = to.call{value: withdrawAmount}("");
+
+        require(success);
+
+        emit AuctionedValueWithdrawn(msg.sender, withdrawAmount);
+    }
+
+    // TODO: test
+    function withdrawAuctionedValue(uint256 withdrawAmount)
+        internal
+        returns (bool)
+    {
+        return withdrawAuctionedValueTo(msg.sender, withdrawAmount);
+    }
 
     AuctionSettings public auctionDefaults =
         AuctionSettings(
@@ -72,6 +110,23 @@ abstract contract Auctionable {
         );
     }
 
+    // TODO: test
+    function replaceBid(uint256 auctionId) public payable returns (bool) {
+        Auction storage auction = _getAuction(auctionId);
+
+        (bool success, uint256 refundedValue) = auction.replaceBid();
+
+        emit AuctionBidWithdrawn(auction.id, msg.sender, refundedValue);
+
+        emit AuctionBidRaised(
+            auction.id,
+            auction.highestBidder,
+            auction.highestBid
+        );
+
+        return success;
+    }
+
     function checkBid(uint256 auctionId)
         public
         view
@@ -80,11 +135,15 @@ abstract contract Auctionable {
         currentBid = _getAuction(auctionId).checkBid();
     }
 
-    function withdrawBid(uint256 auctionId) public returns (bool success) {
+    // TODO: test condition where auction is cancelled
+    function withdrawBid(uint256 auctionId) public returns (bool) {
         Auction storage auction = _getAuction(auctionId);
-        (address bidder, uint256 withdrawValue) = auction.withdraw();
-        emit AuctionBidWithdrawn(auction.id, bidder, withdrawValue);
-        success = true;
+
+        (bool success, uint256 withdrawnValue) = auction.withdrawBid();
+
+        emit AuctionBidWithdrawn(auction.id, msg.sender, withdrawnValue);
+
+        return success;
     }
 
     function setAuctionDefaults(AuctionSettings calldata newDefaults) public {
@@ -123,17 +182,29 @@ abstract contract Auctionable {
 
     function _endAuction(uint256 auctionId) internal returns (bool success) {
         Auction storage auction = _getAuction(auctionId);
+        success = _endAuction(auction);
+    }
+
+    // TODO: test withdrawableAuctionedValue
+    function _endAuction(Auction storage auction)
+        internal
+        returns (bool success)
+    {
         success = auction.end();
+
+        // NOTE: once auction is ended then the highest bid becomes withdrawable
+        withdrawableAuctionedValue += auction.highestBid;
+
         emit AuctionEnded(
             auction.id,
             auction.highestBidder,
-            auction.highestBid,
-            auction.state == AuctionStates.Ended ? "time" : "cancelled"
+            auction.highestBid
         );
     }
 
-    function _cancelAuction(uint256 auctionId) internal returns (bool) {
-        return _getAuction(auctionId).cancel();
+    function _cancelAuction(uint256 auctionId) internal returns (bool success) {
+        success = _getAuction(auctionId).cancel();
+        emit AuctionCancelled(auctionId);
     }
 
     function _getAuction(uint256 auctionId)

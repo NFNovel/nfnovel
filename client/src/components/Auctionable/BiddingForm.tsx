@@ -1,31 +1,60 @@
 import { Button, NumericInput } from "@blueprintjs/core";
 import { BigNumber, ethers } from "ethers";
-import { useContext, useState } from "react";
-import { NFNovelContext } from "src/contexts/nfnovel-context";
-import { connectToMetamask } from "src/utils/connect-metamask";
-import { useEffect } from "react";
+import { useState } from "react";
+import useConnectedAccount from "src/hooks/use-connected-account";
 
-import type { AuctionModalProps } from ".";
-import type { Auction } from "src/types/auction";
+import { amountInEthText } from "./utils";
+
+import type { Auction as AuctionType } from "src/types/auction";
+import type { IUseAuctionable } from "./use-auctionable";
+
+export const WithdrawBidButton = (props: {
+  currentBid: BigNumber;
+  onWithdrawBid: IUseAuctionable["onWithdrawBid"];
+}) => {
+  const { currentBid, onWithdrawBid } = props;
+
+  const [withdrawSuccessful, setWithdrawSuccessful] = useState<boolean>();
+
+  const handleWithdrawBid = async () => {
+    const success = await onWithdrawBid();
+    setWithdrawSuccessful(success);
+  };
+
+  const label = currentBid.isZero() ?
+    "No bid to withdraw" :
+    `Withdraw ${amountInEthText(currentBid)}`;
+
+  return (
+    <div className="flex flex-col p-10">
+      <Button
+        className="h-20"
+        text={label}
+        onClick={handleWithdrawBid}
+        disabled={withdrawSuccessful !== undefined}
+      />
+      {withdrawSuccessful === true && "Withdraw successful"}
+      {withdrawSuccessful === false && "Failed to withdraw"}
+    </div>
+  );
+};
 
 const BiddingForm = (props: {
-  auction: Auction;
-  currentBid: BigNumber;
-  onAddToBid: AuctionModalProps["onAddToBid"];
-  onWithdrawBid: AuctionModalProps["onWithdrawBid"];
+  auction: AuctionType;
+  currentBid: IUseAuctionable["currentBid"];
+  onAddToBid: IUseAuctionable["onAddToBid"];
+  onWithdrawBid: IUseAuctionable["onWithdrawBid"];
+  transactionPending: IUseAuctionable["transactionPending"];
 }) => {
   const {
     auction,
     currentBid,
     onAddToBid,
-    onWithdrawBid
+    onWithdrawBid,
+    transactionPending
   } = props;
 
-  const {
-    connectedAccount,
-    metamaskProvider,
-    connectContractToSigner
-  } = useContext(NFNovelContext);
+  const { connectedAccount, ConnectAccountButtons } = useConnectedAccount();
 
   // NOTE: this should not be bidInWei, this should represent the amount to ADD to the bid
   const [bidInWei, setBidInWei] = useState(BigNumber.from(0));
@@ -48,57 +77,9 @@ const BiddingForm = (props: {
     // indicate success/failure
   };
 
-  const withdrawBid = async () => {
-    const success = await onWithdrawBid();
-  };
-
-  const connectAccount = async () => {
-    if (!metamaskProvider) return null;
-
-    const connectedAccount = await connectToMetamask(metamaskProvider);
-    if (connectedAccount) connectContractToSigner(connectedAccount);
-  };
-
-  if (!metamaskProvider) return null;
-
-  /**
-       * 
-       * 
-       * 
-    [currentBid] | [addToBid input] | [total bid (currentBid + addToBid input value)]
-    [withdraw bid {currentBid}] | [placeBid]
-
-    [addToBid input]:
-    - min (minimum input): highestBid + minimumBidIncrement
-    - stepSize: minimumBidIncrement
-    - value: highestBid + minimumBidIncrement
-      - when component renders set bidInWei to  (highestBid + minimumBidIncrement)
-      - after submitting bid set (highestBid + minimumBidIncrement) 
-    - auction.minimumBidIncrement
-
-    [withdraw bid button]:
-    - disabled if connectedAccount.address == highestBidder
-    - disabled if their currentBid is 0
-    - button text should be `Withdraw ${currentBid}`
-
-    when the auction ends:
-
-    - if connectedAccount.address == highestBidder then present [mint panel button] => mintPanel(panelTokenId)
-    - if not then present [withdraw button]
-    - so (remove the add to bid input/button)
-      * 
-      * 
-      */
-
-  if (!connectedAccount)
-    return (
-      <Button
-        className="p-5"
-        text="Connect to Metamask"
-        onClick={connectAccount}
-        disabled={!metamaskProvider}
-      />
-    );
+  if (!connectedAccount) {
+    return <ConnectAccountButtons />;
+  }
 
   const handleTotalBid = () => {
     return currentBid && ethers.utils.formatEther(currentBid?.add(bidInWei));
@@ -109,6 +90,8 @@ const BiddingForm = (props: {
   const notEnoughForBidding = currentBid && totalBid?.lte(auction.highestBid);
 
   const isHighestBidder = auction.highestBidder === connectedAccount?.address;
+
+  const shouldDisplayWithdrawButton = auction.highestBidder !== connectedAccount.address;
 
   return (
     <div className="p-5 flex flex-wrap flex-col">
@@ -148,18 +131,15 @@ const BiddingForm = (props: {
               "Place Bid"
           }
           onClick={addToBid}
+          loading={transactionPending}
           disabled={auction.state !== 1 || notEnoughForBidding}
         />
-        <Button
-          className="flex flex-grow"
-          text={
-            currentBid.isZero() ?
-              "Nothing to withdraw" :
-              `Withdraw bids (${ethers.utils.formatEther(currentBid)})`
-          }
-          onClick={withdrawBid}
-          disabled={currentBid.isZero() || isHighestBidder}
-        />
+        {shouldDisplayWithdrawButton && !currentBid.isZero() && (
+          <WithdrawBidButton
+            currentBid={currentBid}
+            onWithdrawBid={onWithdrawBid}
+          />
+        )}
       </div>
     </div>
   );

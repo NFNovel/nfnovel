@@ -2,14 +2,28 @@
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {
-      "@styles/*": ["styles/*"],
-      "@contracts/*": ["../evm/artifacts/contracts/*"],
-      "@contracts/types/*": ["../evm/typechain/*"],
-      "@contracts/deployments/*": ["../evm/deployments/*"]
+      "@styles/*": [
+        "styles/*"
+      ],
+      "@evm/contracts/*": [
+        "../evm/artifacts/contracts/*"
+      ],
+      "@evm/deployments/*": [
+        "../evm/deployments/*"
+      ],
+      "@evm/types/*": [
+        "../evm/typechain/*"
+      ],
     },
     "target": "es5",
-    "lib": ["dom", "dom.iterable", "esnext"],
-    "typeRoots": ["./src/types"],
+    "lib": [
+      "dom",
+      "dom.iterable",
+      "esnext"
+    ],
+    "typeRoots": [
+      "./src/types"
+    ],
     "allowJs": true,
     "skipLibCheck": true,
     "strict": true,
@@ -23,6 +37,14 @@
     "jsx": "preserve",
     "incremental": true
   },
-  "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx", "**/*.json", "**/*.css"],
-  "exclude": ["node_modules"]
+  "include": [
+    "next-env.d.ts",
+    "**/*.ts",
+    "**/*.tsx",
+    "**/*.json",
+    "**/*.css"
+  ],
+  "exclude": [
+    "node_modules"
+  ]
 }

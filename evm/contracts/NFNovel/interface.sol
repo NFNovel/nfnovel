@@ -21,8 +21,15 @@ interface INFNovel is OpenSeaCompatible {
     // event CreatorAdded(Creator creator);
     // event CreatorModified(Creator creator);
 
-    event PageAdded(uint256 pageNumber, uint256[] panelTokenIds);
-    event PageRevealed(uint256 pageNumber, uint256[] panelTokenIds);
+    event PageAdded(
+        uint256 indexed pageNumber,
+        uint256[] indexed panelTokenIds
+    );
+
+    event PageRevealed(
+        uint256 indexed pageNumber,
+        uint256[] indexed panelTokenIds
+    );
 
     function getPage(uint256 pageNumber)
         external
@@ -44,8 +51,6 @@ interface INFNovel is OpenSeaCompatible {
     function addPage(uint8 panelsCount, string calldata obscuredBaseURI)
         external
         returns (uint256 pageNumber);
-
-    function endPanelAuction(uint256 panelTokenId) external returns (bool);
 
     function mintPanel(uint256 panelTokenId) external returns (bool);
 

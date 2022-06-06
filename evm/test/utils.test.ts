@@ -54,11 +54,6 @@ describe("Test utils", () => {
       panelAuction = await nfnovelContract.auctions(1);
     });
 
-    it("ends the auction", async () => {
-      // Auction/structures.sol: AuctionStates enum, Ended is index 2
-      expect(panelAuction.state).to.eq(2);
-    });
-
     it("the highest bidder of the auction is the winner", () =>
       expect(panelAuction.highestBidder).to.hexEqual(winnerAddress));
 

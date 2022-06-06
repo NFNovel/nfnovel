@@ -14,13 +14,23 @@ import "../Auction/Auctionable.sol";
 import "./interface.sol";
 import "./structures.sol";
 
-// BUG: no way to withdraw funds!
 contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
     using Strings for uint256;
     using Counters for Counters.Counter;
 
     Counters.Counter private _pageNumbers;
     Counters.Counter private _panelTokenIds;
+
+    // TODO: test
+    // THINK: alternate is when a panel is minted store payouts (withdrawableAuctionedValue) in mapping (owner/creatorAddress -> payout) according to proportion of ownership and then call withdrawAuctionedValueTo(payee, payout)
+    // THINK: this would allow panel owners to get a royalty proportional to the number of panels they own (say 10% of numberOwned/totalPanels, 10% NFNovel, 80% creators) BUT will require keeping track (minting and transfer) how many panels each owner holds
+    function withdraw(uint256 withdrawAmount) public onlyOwner returns (bool) {
+        // NOTE: can use withdrawAuctionedValueTo(to, withdrawAmount) when implementing creator payouts
+        // add onlyOwnerOrCreator modifier
+        // THINK: will need to keep track of amounts each have withdrawn to maintain royalty payouts
+        // THINK: alternatively make it onlyOwner and enforce all payouts at once (owner, creator, ...creatorN)
+        return withdrawAuctionedValue(withdrawAmount);
+    }
 
     // mapping(pageNumber => Page)
     mapping(uint256 => Page) private pages; // page(pageNumber)
@@ -106,25 +116,16 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
         return _buildTokenURI(page.baseURI, panelTokenId);
     }
 
-    function endPanelAuction(uint256 panelTokenId)
-        public
-        override
-        onlyOwner
-        returns (bool)
-    {
-        return _endAuction(getPanelAuctionId(panelTokenId));
-    }
-
     function mintPanel(uint256 panelTokenId) public override returns (bool) {
         Auction storage panelAuction = _getAuction(
             getPanelAuctionId(panelTokenId)
         );
 
-        if (panelAuction.state != AuctionStates.Ended)
-            revert PanelAuctionNotEnded(panelAuction.id);
-
         if (panelAuction.highestBidder != msg.sender)
             revert NotPanelAuctionWinner(panelAuction.id);
+
+        bool success = _endAuction(panelAuction);
+        require(success);
 
         _safeMint(msg.sender, panelTokenId);
 
@@ -160,6 +161,8 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
         emit PageAdded(pageNumber, pages[pageNumber].panelTokenIds);
     }
 
+    // THINK: implement the hashedRevealedBaseURI idea that Karol suggested
+    // this is a way to ensure the revealedBaseURI is consistent
     function revealPage(uint256 pageNumber, string calldata revealedBaseURI)
         public
         override

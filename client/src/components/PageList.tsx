@@ -1,11 +1,11 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
-import { NFNovelContext } from "src/contexts/nfnovel-context";
+import useNFNovel from "src/hooks/use-nfnovel";
 
 import Page from "./Page";
 
 function PageList() {
-  const { nfnovel } = useContext(NFNovelContext);
+  const { nfnovel } = useNFNovel();
   const [pages, setPages]: any = useState([]);
 
   const [hasMore, setHasMore] = useState(true);
@@ -51,8 +51,6 @@ function PageList() {
             <Page
               key={index}
               pageData={pageData}
-              // what is this prop used for?
-              clickable={true}
             />
           ))}
         </InfiniteScroll>

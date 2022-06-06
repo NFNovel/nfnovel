@@ -1,11 +1,12 @@
-import { useCallback, useContext, useEffect, useState } from "react";
-import { NFNovelContext } from "src/contexts/nfnovel-context";
-import { Button, Spinner } from "@blueprintjs/core";
-import { BigNumber, ethers } from "ethers";
+import { useCallback, useEffect, useState } from "react";
+import { Button, Drawer, Position, Spinner } from "@blueprintjs/core";
+import useNFNovel from "src/hooks/use-nfnovel";
+import useConnectedAccount from "src/hooks/use-connected-account";
+import { BigNumber } from "ethers";
 
-import AuctionModal from "./AuctionModal";
+import AuctionManager from "./Auctionable/Auction";
+import MintTokenButton from "./Auctionable/MintTokenButton";
 
-import type { Auction } from "src/types/auction";
 import type { PanelData } from "src/contexts/panel-context";
 
 type PanelProps = {
@@ -19,181 +20,49 @@ const Panel = (props: PanelProps) => {
     panelTokenId
   } = props.panelData;
 
-  const { nfnovel, connectedAccount } = useContext(NFNovelContext);
+  const { nfnovel } = useNFNovel();
+  const { connectedAccount } = useConnectedAccount();
 
-  // FUTURE: create a WithAuction context provider that wraps around AuctionModal
-  // should take as props: contract instance, isOpen, onMint and hooks for various calls
-  // should move all this listener / update / auction props stuff into it
-  const [auction, setAuction] = useState<Auction>();
-  const [currentBid, setCurrentBid] = useState<BigNumber>(BigNumber.from(0));
   const [auctionIsOpen, setAuctionIsOpen] = useState<boolean>(false);
 
-  const handleEndAuction = useCallback(
-    (panelAuctionId: BigNumber) =>
-      setAuction((currentAuction) => {
-        if (!currentAuction) return;
-        if (!panelAuctionId.eq(currentAuction.id)) return currentAuction;
-
-        // cannot mutate state (readonly)
-        // return a new object merging currentAuction with new state field value
-        return Object.assign({}, currentAuction, { state: 2 });
-      }),
-    [],
-  );
-
-  const handleBidRaised = useCallback(
-    (
-      panelAuctionId: BigNumber,
-      highestBidder: string,
-      highestBid: BigNumber,
-    ) => {
-      if (!nfnovel || !connectedAccount || !auction) return;
-
-      if (!panelAuctionId.eq(auction.id)) return;
-
-      setAuction(Object.assign({}, auction, { highestBid, highestBidder }));
-
-      if (highestBidder === connectedAccount.address) setCurrentBid(highestBid);
-    },
-    [nfnovel, auction, connectedAccount],
-  );
-
-  const handleBidWithdrawn = useCallback(
-    (panelAuctionId: BigNumber, withdrawingBidder: string) => {
-      if (!auction || !connectedAccount) return;
-      if (!panelAuctionId.eq(auction.id)) return;
-
-      if (withdrawingBidder === connectedAccount.address)
-        setCurrentBid(BigNumber.from(0));
-    },
-    [auction, connectedAccount],
-  );
+  const [panelAuctionId, setPanelAuctionId] = useState<BigNumber>();
 
   useEffect(() => {
-    const getPanelAuction = async () => {
-      if (!nfnovel) return null;
-
-      const panelAuctionId = await nfnovel.getPanelAuctionId(panelTokenId);
-      setAuction(await nfnovel.auctions(panelAuctionId));
-
-      // only run if they are authenticated
-      if (nfnovel.signer) {
-        setCurrentBid(await nfnovel.checkBid(panelAuctionId));
-      }
+    const loadPanelAuctionId = async () => {
+      setPanelAuctionId(await nfnovel.getPanelAuctionId(panelTokenId));
     };
 
-    getPanelAuction();
-  }, [nfnovel, panelTokenId]);
+    if (!panelAuctionId) loadPanelAuctionId();
+  }, [panelTokenId, panelAuctionId, nfnovel]);
 
-  useEffect(() => {
-    const setUpAuctionListeners = () => {
-      if (!nfnovel) return;
+  const openAuctionModal = useCallback(
+    () => !auctionIsOpen && setAuctionIsOpen(true),
+    [auctionIsOpen],
+  );
 
-      nfnovel.on(
-        nfnovel.interface.events["AuctionEnded(uint256,address,uint256,string)"]
-          .name,
-        handleEndAuction,
-      );
+  const closeAuctionModal = useCallback(
+    () => auctionIsOpen && setAuctionIsOpen(false),
+    [auctionIsOpen],
+  );
 
-      nfnovel.on(
-        nfnovel.interface.events["AuctionBidRaised(uint256,address,uint256)"]
-          .name,
-        handleBidRaised,
-      );
-
-      nfnovel.on(
-        nfnovel.interface.events["AuctionBidWithdrawn(uint256,address,uint256)"]
-          .name,
-        handleBidWithdrawn,
-      );
-    };
-
-    setUpAuctionListeners();
-
-    return () => {
-      if (!nfnovel) return;
-
-      nfnovel.removeListener(
-        nfnovel.interface.events["AuctionEnded(uint256,address,uint256,string)"]
-          .name,
-        handleEndAuction,
-      );
-
-      nfnovel.removeListener(
-        nfnovel.interface.events["AuctionBidRaised(uint256,address,uint256)"]
-          .name,
-        handleBidRaised,
-      );
-
-      nfnovel.removeListener(
-        nfnovel.interface.events["AuctionBidWithdrawn(uint256,address,uint256)"]
-          .name,
-        handleBidWithdrawn,
-      );
-    };
-  }, [nfnovel, handleEndAuction, handleBidRaised, handleBidWithdrawn]);
-
-  const openAuctionModal = () => !auctionIsOpen && setAuctionIsOpen(true);
-  const closeAuctionModal = () => auctionIsOpen && setAuctionIsOpen(false);
-
-  if (!imageSource || !metadata) return null;
-  if (!nfnovel || !auction) return <Spinner />;
-
-  // TODO: refactor to useCallback
-  const handleAddToBid = async (amountInWei: BigNumber) => {
+  const handleMintPanel = useCallback(async () => {
     try {
-      await nfnovel.addToBid(auction.id, { value: amountInWei });
-      // NOTE: pass waitingOnEvent prop down to AuctionModal/children
-      // they should present a loading / spinner when waiting on event
-      // setWaitingOnEvent(true);
-
-      return true;
-    } catch (error: any) {
-      console.error("addToBid failed", {
-        panelTokenId,
-        panelAuctionId: auction.id,
-        error: error,
-      });
-
-      return false;
-    }
-  };
-
-  const handleMintPanel = async () => {
-    try {
-      await nfnovel.mintPanel(auction.id);
+      await nfnovel.mintPanel(panelTokenId);
 
       return true;
     } catch (error: any) {
       console.error("mintPanel failed", {
         panelTokenId,
-        panelAuctionId: auction.id,
         error: error,
       });
 
       return false;
     }
-  };
+  }, [nfnovel, panelTokenId]);
 
-  const handleWithdrawBid = async () => {
-    try {
-      await nfnovel.withdrawBid(auction.id);
+  if (!imageSource || !metadata) return null;
 
-      return true;
-    } catch (error: any) {
-      console.error("withdrawBid failed", {
-        panelTokenId,
-        panelAuctionId: auction.id,
-        error: error,
-      });
-
-      return false;
-    }
-  };
-
-  console.log({
-    currentBid: currentBid && ethers.utils.formatEther(currentBid),
-  });
+  if (!panelAuctionId) return <Spinner />;
 
   return (
     <article className="max-w-md mx-auto mt-4 bg-blue-800 shadow-lg border rounded-md duration-300 hover:shadow-sm">
@@ -203,19 +72,38 @@ const Panel = (props: PanelProps) => {
             src={imageSource}
             className="w-full h-48 rounded-t-md"
           />
-          <AuctionModal
-            imageSource={imageSource}
-            auction={auction}
-            currentBid={currentBid}
-            isOpen={auctionIsOpen}
-            metadata={metadata}
-            hasConnectedAccount={!!connectedAccount}
-            onAddToBid={handleAddToBid}
-            onClose={closeAuctionModal}
-            onWithdrawBid={handleWithdrawBid}
-            onMintPanel={handleMintPanel}
-          />
         </Button>
+        <Drawer
+          isOpen={auctionIsOpen}
+          title="Place your Bid for this Panel"
+          icon="info-sign"
+          position={Position.BOTTOM}
+          canEscapeKeyClose={true}
+          canOutsideClickClose={true}
+          enforceFocus={true}
+          autoFocus={true}
+          onClose={closeAuctionModal}
+          usePortal={true}
+          hasBackdrop={true}
+        >
+          <AuctionManager
+            auctionId={panelAuctionId}
+            auctionableContract={nfnovel}
+            connectedAccountAddress={connectedAccount?.address}
+            token={{
+              metadata,
+              imageSource,
+              tokenId: panelTokenId,
+            }}
+            ClaimTokenButton={() => (
+              <MintTokenButton
+                buttonLabel="Mint Panel!"
+                onMint={handleMintPanel}
+                erc721Contract={nfnovel}
+              />
+            )}
+          />
+        </Drawer>
       </div>
     </article>
   );

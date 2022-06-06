@@ -52,21 +52,29 @@ describe("NFNovel [Auctionable]: Panel Auctions", () => {
     });
 
     context("reverts", () => {
-      it("with BidBelowStartingValue if the bid is lower than the startingValue", () =>
+      it("with BidBelowHighestBid if the bid is lower or equal to the current highest bid", () => {
         expect(
           nfnovelContract.addToBid(panelAuctionId, {
             // set a value below starting value
             value: auctionStartingValue.div(2),
           })
-        ).to.be.revertedWith("BidBelowStartingValue"));
+        ).to.be.revertedWith("BidBelowHighestBid");
 
-      it("with BidBelowMinimumIncrement if the cumulative bid of the caller is below the highest bid + the minimum bid increment", async () => {
+        expect(
+          nfnovelContract.addToBid(panelAuctionId, {
+            // set a value below starting value
+            value: auctionStartingValue,
+          })
+        ).to.be.revertedWith("BidBelowHighestBid");
+      });
+
+      it("with BidTooLow if the cumulative bid of the caller is below the highest bid + the minimum bid increment", async () => {
         const bidToAdd = auctionStartingValue.add(1);
         expect(bidToAdd).to.be.lte(auctionMinimumBidIncrement);
 
         await expect(
           nfnovelContract.addToBid(panelAuctionId, { value: bidToAdd })
-        ).to.be.revertedWith("BidBelowMinimumIncrement");
+        ).to.be.revertedWith("BidTooLow");
       });
 
       // NOTE: this test that speeds up block time must come after any that need an Active auction

@@ -1,7 +1,7 @@
 import path from "path";
 import { readdir, readFile, stat } from "fs/promises";
 
-import type { NFNovel } from "@contracts/types/NFNovel";
+import type { NFNovel } from "@evm/types/NFNovel";
 
 export const getOwnedPanelTokenIds = async (
   nfnovel: NFNovel,

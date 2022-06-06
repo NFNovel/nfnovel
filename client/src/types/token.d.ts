@@ -1,3 +1,5 @@
+export type ipfsURI = `ipfs://${string}`;
+
 export interface IERC721TokenMetadata {
   name: string;
   image: ipfsURI;

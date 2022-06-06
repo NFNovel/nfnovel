@@ -10,14 +10,24 @@ library AuctionManagement {
     error AuctionNotPending();
     error AuctionIsActive();
     error AuctionNotActive();
+    error CannotEndActiveAuction();
 
     error BiddersBeforeStart();
     error BidBelowHighestBid();
     error BidBelowStartingValue();
-    error BidBelowMinimumIncrement();
+    error BidTooLow();
 
     error NoBidToWithdraw();
     error CannotWithdrawHighestBid();
+
+    modifier onlyActiveAuction(Auction storage auction) {
+        if (
+            auction.state != AuctionStates.Active ||
+            block.timestamp >= auction.endTime
+        ) revert AuctionNotActive();
+
+        _;
+    }
 
     function start(
         Auction storage auction,
@@ -44,9 +54,11 @@ library AuctionManagement {
         auction.highestBidder = address(0);
     }
 
-    function addToBid(Auction storage auction) internal returns (bool) {
-        _confirmAuctionIsActive(auction);
-
+    function addToBid(Auction storage auction)
+        internal
+        onlyActiveAuction(auction)
+        returns (bool)
+    {
         uint256 bidIncrement = msg.value;
         uint256 previousBid = auction.bids[msg.sender];
         uint256 bidAmount = previousBid + bidIncrement;
@@ -61,6 +73,30 @@ library AuctionManagement {
         return true;
     }
 
+    // TODO: test
+    function replaceBid(Auction storage auction)
+        internal
+        onlyActiveAuction(auction)
+        returns (bool success, uint256 refundedValue)
+    {
+        address bidder = msg.sender;
+        uint256 newBid = msg.value;
+        uint256 previousBid = auction.bids[bidder];
+
+        _validateBid(auction, newBid);
+        _validateWithdrawal(auction, bidder, previousBid);
+
+        auction.highestBid = newBid;
+        auction.highestBidder = bidder;
+        auction.bids[bidder] = newBid;
+
+        (success, ) = bidder.call{value: previousBid}("");
+
+        require(success);
+
+        return (success, previousBid);
+    }
+
     function checkBid(Auction storage auction)
         internal
         view
@@ -70,51 +106,49 @@ library AuctionManagement {
     }
 
     function cancel(Auction storage auction) internal returns (bool) {
-        _endAuction(auction, AuctionStates.Cancelled);
-        return auction.state == AuctionStates.Cancelled;
+        if (auction.state != AuctionStates.Active) revert AuctionNotActive();
+
+        auction.state = AuctionStates.Cancelled;
+
+        require(auction.state == AuctionStates.Cancelled);
+
+        return true;
     }
 
     function end(Auction storage auction) internal returns (bool) {
-        _endAuction(auction, AuctionStates.Ended);
+        if (auction.state != AuctionStates.Active) revert AuctionNotActive();
+        if (block.timestamp < auction.endTime) revert CannotEndActiveAuction();
 
-        return auction.state == AuctionStates.Ended;
+        auction.state = AuctionStates.Ended;
+
+        require(auction.state == AuctionStates.Ended);
+
+        return true;
     }
 
-    function withdraw(Auction storage auction)
+    function withdrawBid(Auction storage auction)
         internal
-        returns (address bidder, uint256 withdrawValue)
+        returns (bool success, uint256 withdrawValue)
     {
-        bidder = msg.sender;
+        address bidder = msg.sender;
         withdrawValue = auction.bids[bidder];
 
         _validateWithdrawal(auction, bidder, withdrawValue);
 
         auction.bids[bidder] = 0;
 
-        payable(bidder).transfer(withdrawValue);
-    }
+        (success, ) = bidder.call{value: withdrawValue}("");
 
-    function _endAuction(Auction storage auction, AuctionStates finalState)
-        private
-    {
-        if (auction.state != AuctionStates.Active) revert AuctionNotActive();
-
-        auction.state = finalState;
-    }
-
-    function _confirmAuctionIsActive(Auction storage auction) private view {
-        // check and end the auction (changing state to Ended) first
-        if (block.timestamp >= auction.endTime) revert AuctionNotActive();
+        require(success);
     }
 
     function _validateBid(Auction storage auction, uint256 bidAmount)
         private
         view
     {
-        if (bidAmount <= auction.startingValue) revert BidBelowStartingValue();
         if (bidAmount <= auction.highestBid) revert BidBelowHighestBid();
         if (bidAmount < auction.highestBid + auction.minimumBidIncrement)
-            revert BidBelowMinimumIncrement();
+            revert BidTooLow();
     }
 
     function _validateWithdrawal(
@@ -123,6 +157,11 @@ library AuctionManagement {
         uint256 withdrawalValue
     ) private view {
         if (withdrawalValue == 0) revert NoBidToWithdraw();
-        if (auction.highestBidder == bidder) revert CannotWithdrawHighestBid();
+        if (
+            auction.highestBidder == bidder &&
+            // TODO: test
+            // only allow highest bidder to withdraw if auction has been cancelled
+            auction.state != AuctionStates.Cancelled
+        ) revert CannotWithdrawHighestBid();
     }
 }
