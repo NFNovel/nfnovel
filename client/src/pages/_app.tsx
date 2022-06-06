@@ -4,6 +4,7 @@ import { chain, configureChains, createClient, WagmiConfig } from "wagmi";
 import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
 import WithPanelData from "src/contexts/panel-context";
 import ConnectedAccountProvider from "src/contexts/connected-account-context";
+import { useEffect, useState } from "react";
 
 import type { AppProps } from "next/app";
 
@@ -36,6 +37,13 @@ const wagmiClient = createClient({
 });
 
 function MyApp({ Component, pageProps }: AppProps) {
+  // NOTE: fix hydration error with nextjs (force all client-side)
+  const [isClientSide, setIsClientSide] = useState(false);
+
+  useEffect(() => setIsClientSide(true), []);
+
+  if (!isClientSide) return null;
+
   return (
     <WagmiConfig client={wagmiClient}>
       <ConnectedAccountProvider>
