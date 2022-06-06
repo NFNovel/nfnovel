@@ -2,10 +2,11 @@ import { useCallback, useEffect, useState } from "react";
 import { Button, Drawer, Position, Spinner } from "@blueprintjs/core";
 import useNFNovel from "src/hooks/use-nfnovel";
 import useConnectedAccount from "src/hooks/use-connected-account";
+import { BigNumber } from "ethers";
 
-import AuctionManager from "./Auction/AuctionManager";
+import AuctionManager from "./Auctionable/Auction";
+import MintTokenButton from "./Auctionable/MintTokenButton";
 
-import type { BigNumber } from "ethers";
 import type { PanelData } from "src/contexts/panel-context";
 
 type PanelProps = {
@@ -19,13 +20,12 @@ const Panel = (props: PanelProps) => {
     panelTokenId
   } = props.panelData;
 
+  const { nfnovel } = useNFNovel();
   const { connectedAccount } = useConnectedAccount();
-  const { nfnovel, nfnovelContractConfig } = useNFNovel();
-  const [panelAuctionId, setPanelAuctionId] = useState<BigNumber>();
+
   const [auctionIsOpen, setAuctionIsOpen] = useState<boolean>(false);
 
-  // TODO: have state to determine if mint button should be presented
-  // lookup auction(panelAuctionId).[state is ended, highestBidder is connectedAccount] && ownerOf(panelTokenId) is address 0
+  const [panelAuctionId, setPanelAuctionId] = useState<BigNumber>();
 
   useEffect(() => {
     const loadPanelAuctionId = async () => {
@@ -45,24 +45,24 @@ const Panel = (props: PanelProps) => {
     [auctionIsOpen],
   );
 
+  const handleMintPanel = useCallback(async () => {
+    try {
+      await nfnovel.mintPanel(panelTokenId);
+
+      return true;
+    } catch (error: any) {
+      console.error("mintPanel failed", {
+        panelTokenId,
+        error: error,
+      });
+
+      return false;
+    }
+  }, [nfnovel, panelTokenId]);
+
   if (!imageSource || !metadata) return null;
 
   if (!panelAuctionId) return <Spinner />;
-
-  // const handleMintPanel = async () => {
-  //   try {
-  //     await nfnovel.mintPanel(panelTokenId);
-
-  //     return true;
-  //   } catch (error: any) {
-  //     console.error("mintPanel failed", {
-  //       panelTokenId,
-  //       error: error,
-  //     });
-
-  //     return false;
-  //   }
-  // };
 
   return (
     <article className="max-w-md mx-auto mt-4 bg-blue-800 shadow-lg border rounded-md duration-300 hover:shadow-sm">
@@ -72,33 +72,38 @@ const Panel = (props: PanelProps) => {
             src={imageSource}
             className="w-full h-48 rounded-t-md"
           />
-
-          <Drawer
-            isOpen={auctionIsOpen}
-            title="Place your Bid for this Panel"
-            icon="info-sign"
-            position={Position.BOTTOM}
-            canEscapeKeyClose={true}
-            canOutsideClickClose={true}
-            enforceFocus={true}
-            autoFocus={true}
-            onClose={closeAuctionModal}
-            usePortal={true}
-            hasBackdrop={true}
-          >
-            <AuctionManager
-              auctionId={panelAuctionId}
-              auctionableContract={nfnovel}
-              connectedAccount={connectedAccount}
-              auctionableContractConfig={nfnovelContractConfig}
-              tokenData={{
-                metadata,
-                imageSource,
-                tokenId: panelTokenId,
-              }}
-            />
-          </Drawer>
         </Button>
+        <Drawer
+          isOpen={auctionIsOpen}
+          title="Place your Bid for this Panel"
+          icon="info-sign"
+          position={Position.BOTTOM}
+          canEscapeKeyClose={true}
+          canOutsideClickClose={true}
+          enforceFocus={true}
+          autoFocus={true}
+          onClose={closeAuctionModal}
+          usePortal={true}
+          hasBackdrop={true}
+        >
+          <AuctionManager
+            auctionId={panelAuctionId}
+            auctionableContract={nfnovel}
+            connectedAccountAddress={connectedAccount?.address}
+            token={{
+              metadata,
+              imageSource,
+              tokenId: panelTokenId,
+            }}
+            ClaimTokenButton={() => (
+              <MintTokenButton
+                buttonLabel="Mint Panel!"
+                onMint={handleMintPanel}
+                erc721Contract={nfnovel}
+              />
+            )}
+          />
+        </Drawer>
       </div>
     </article>
   );
