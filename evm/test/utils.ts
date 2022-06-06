@@ -154,7 +154,7 @@ export const setPanelAuctionHighestBidder = async (
   };
 };
 
-export const endPanelAuction = async (
+export const endPanelAuctionTime = async (
   nfnovelContract: NFNovel,
   panelTokenId: number | BigNumber,
   panelAuctionId?: number | BigNumber
@@ -168,8 +168,6 @@ export const endPanelAuction = async (
   const blockTimeIncrement = auctionEndTime.sub(currentBlockTime);
 
   if (blockTimeIncrement.gt(0)) await addBlockTime(blockTimeIncrement);
-
-  await nfnovelContract.endPanelAuction(panelTokenId);
 };
 
 /**
@@ -189,7 +187,7 @@ export const setPanelAuctionWinner = async (
   const { bid, highestBidder, panelAuctionId } =
     await setPanelAuctionHighestBidder(nfnovelContract, winner, panelTokenId);
 
-  await endPanelAuction(nfnovelContract, panelTokenId, panelAuctionId);
+  await endPanelAuctionTime(nfnovelContract, panelTokenId, panelAuctionId);
 
   return {
     bid,
@@ -233,7 +231,7 @@ export const mintMultiplePagePanels = async (
 
   // NOTE: have to execute serially to ensure block time change is valid
   for (const panelTokenId of panelTokenIds) {
-    await endPanelAuction(nfnovelContract, panelTokenId);
+    await endPanelAuctionTime(nfnovelContract, panelTokenId);
   }
 
   await Promise.all(

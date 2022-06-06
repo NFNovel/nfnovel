@@ -6,6 +6,7 @@ import {
   setPanelAuctionWinner,
   mintSinglePagePanel,
   mintMultiplePagePanels,
+  endPanelAuctionTime,
 } from "./utils";
 import { expect } from "chai";
 import { OZ_INTERFACE_IDS } from "./constants";
@@ -204,11 +205,22 @@ describe("NFNovel", () => {
           "InvalidPanelTokenId"
         ));
 
-      it("with PanelAuctionNotEnded(panelAuctionId) if the auction has not ended", async () => {
+      it("with CannotEndActiveAuction if the auction time has not ended", async () => {
+        await nfnovelContract.setAuctionDefaults({
+          duration: 10,
+          minimumBidIncrement: 0,
+          startingValue: 0,
+        });
+
         await nfnovelContract.addPage(1, "firstPage");
-        await expect(nfnovelContract.mintPanel(1)).to.be.revertedWith(
-          "PanelAuctionNotEnded(1)"
-        );
+
+        await nfnovelContract.connect(bidder).addToBid(1, {
+          value: ethers.constants.WeiPerEther.mul(1),
+        });
+
+        await expect(
+          nfnovelContract.connect(bidder).mintPanel(1)
+        ).to.be.revertedWith("CannotEndActiveAuction");
       });
 
       it("with NotPanelAuctionWinner(panelAuctionId) if the caller is not the winner of the auction", async () => {
@@ -231,12 +243,10 @@ describe("NFNovel", () => {
           value: ethers.constants.WeiPerEther.mul(1),
         });
 
-        await addBlockTime(auctionDurationSeconds);
-
         // sanity check
         expect(bidderAddress).not.to.hexEqual(nonOwnerAddress);
 
-        await nfnovelContract.endPanelAuction(1);
+        await endPanelAuctionTime(nfnovelContract, 1, 1);
 
         await expect(
           nfnovelContract.connect(nonOwner).mintPanel(1)
@@ -244,7 +254,7 @@ describe("NFNovel", () => {
       });
     });
 
-    context("successful call", () => {
+    context.only("successful call", () => {
       let nfnovelContract: NFNovel;
       before(async () => {
         nfnovelContract = await deployNFNovelTestContract(
@@ -252,8 +262,7 @@ describe("NFNovel", () => {
           "Mysterio",
           "NFN-1"
         );
-      });
-      it("mints the panel associating it with the auction winner (caller) address", async () => {
+
         await nfnovelContract.addPage(1, "secondPage");
 
         await setPanelAuctionWinner(nfnovelContract, {
@@ -262,7 +271,14 @@ describe("NFNovel", () => {
         });
 
         await nfnovelContract.connect(bidder).mintPanel(1);
+      });
 
+      it("ends the auction", async () => {
+        const auction = await nfnovelContract.auctions(1);
+        expect(auction.state).to.eq(2);
+      });
+
+      it("mints the panel associating it with the auction winner (caller) address", async () => {
         expect(await nfnovelContract.ownerOf(1)).to.hexEqual(bidderAddress);
       });
     });
