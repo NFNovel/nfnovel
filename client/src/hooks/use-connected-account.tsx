@@ -14,6 +14,30 @@ const ConnectAccountButtons = () => {
     pendingConnector
   } = useConnect();
 
+  if (!window.ethereum)
+    return (
+      <ButtonGroup>
+        <Button>
+          <a
+            href="https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Install Metamask (Chrome)
+          </a>
+        </Button>
+        <Button>
+          <a
+            href="https://addons.mozilla.org/en-US/firefox/addon/ether-metamask/"
+            target="_blank"
+            rel="noreferrer noopener"
+          >
+            Install Metamask (Firefox)
+          </a>
+        </Button>
+      </ButtonGroup>
+    );
+
   return (
     <ButtonGroup>
       {connectors.map((connector) => (
@@ -22,7 +46,7 @@ const ConnectAccountButtons = () => {
           key={connector.id}
           onClick={() => connect(connector)}
         >
-          {connector.name}
+          Connect with {connector.name}
           {!connector.ready && " (unsupported)"}
           {isConnecting &&
             connector.id === pendingConnector?.id &&
