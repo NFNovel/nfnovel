@@ -1,6 +1,8 @@
 import { BigNumber } from "ethers";
 import { useContractEvent } from "wagmi";
 import { useState, useEffect, useCallback } from "react";
+import { DateTime, Duration } from "luxon";
+import { useInterval } from "src/utils/use-timers";
 
 import { buildAuctionFilters } from "./utils";
 
@@ -8,31 +10,63 @@ import type { ContractInterface } from "ethers";
 import type { Auctionable } from "@evm/types/Auctionable";
 import type { Auction as AuctionType } from "src/types/auction";
 
-export interface IUseAuctionConfig {
+export interface IUseAuctionableConfig {
+  auctionId: BigNumber | number;
   auctionableContract: Auctionable;
   connectedAccountAddress: string | undefined | null;
-  /** WAGMI compatible Contract config for events */
-  auctionableContractConfig: {
-    addressOrName: string;
-    contractInterface: ContractInterface;
-  };
-  auctionId: BigNumber | number;
+  onAuctionEnded?: (endedAuction: AuctionType) => void;
 }
 
-const useAuctionable = (config: IUseAuctionConfig) => {
+export interface IUseAuctionable {
+  currentBid: BigNumber;
+  transactionPending: boolean;
+  isActive: boolean | undefined;
+  timeRemaining: Duration | null;
+  auction: AuctionType | undefined;
+  onWithdrawBid: () => Promise<boolean>;
+  onAddToBid: (amountInWei: BigNumber) => Promise<boolean>;
+}
+
+export const computeTimeRemaining = (auction: AuctionType) => {
+  const remainingTime = DateTime.fromSeconds(
+    auction.endTime.toNumber(),
+  ).diffNow(["seconds", "hours", "minutes"]);
+
+  return remainingTime.toMillis() <= 0 ? Duration.fromMillis(0) : remainingTime;
+};
+
+const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
   const {
     auctionId,
-    connectedAccountAddress,
+    onAuctionEnded,
     auctionableContract,
-    auctionableContractConfig,
+    connectedAccountAddress,
   } = config;
 
+  /** WAGMI compatible Contract config for events */
+  const auctionableContractConfig = {
+    addressOrName: auctionableContract.address,
+    contractInterface: auctionableContract.interface,
+  };
+
+  const [isActive, setIsActive] = useState<boolean>();
   const [auction, setAuction] = useState<AuctionType>();
-
   const [transactionPending, setTransactionPending] = useState(false);
-
+  const [timeRemaining, setTimeRemaining] = useState<Duration | null>(null);
   const [currentConnectedAccountBid, setCurrentConnectedAccountBid] = useState(
     BigNumber.from(0),
+  );
+
+  // recalculates remaining time every second until auction is no longer active
+  useInterval(
+    () => {
+      if (!auction) return;
+
+      const _timeRemaining = computeTimeRemaining(auction);
+
+      setTimeRemaining(_timeRemaining);
+    },
+    isActive ? 1000 : null,
   );
 
   /**
@@ -41,13 +75,29 @@ const useAuctionable = (config: IUseAuctionConfig) => {
 
   useEffect(() => {
     const loadAuction = async () => {
-      if (auction) return;
+      const auction = await auctionableContract.auctions(auctionId);
       // only load the auction once, afterwards it will be kept in sync with event listeners
-      setAuction(await auctionableContract.auctions(auctionId));
+      setAuction(auction);
+
+      // if auction is ended report on load
+      if (auction.state === 2) {
+        setIsActive(false);
+        onAuctionEnded && onAuctionEnded(auction);
+
+        return;
+      }
+
+      const remainingTime = computeTimeRemaining(auction);
+      if (remainingTime.toMillis() > 0) {
+        setIsActive(true);
+        setTimeRemaining(remainingTime);
+      } else {
+        setIsActive(false);
+      }
     };
 
-    loadAuction();
-  }, [auction, auctionableContract, auctionId]);
+    if (!auction) loadAuction();
+  }, [auction, auctionableContract, auctionId, onAuctionEnded]);
 
   useEffect(() => {
     const loadCurrentBid = async () => {
@@ -67,6 +117,13 @@ const useAuctionable = (config: IUseAuctionConfig) => {
     loadCurrentBid();
     // NOTE: will reload currentBid if connectedAccountAddress changes (causing contract to update)
   }, [auctionId, auctionableContract]);
+
+  // NOTE: reset time remaining so it doesnt "jump" if unmounted
+  useEffect(() => {
+    return () => {
+      setTimeRemaining(null);
+    };
+  }, []);
 
   /**
    * END EFFECTS
@@ -146,13 +203,20 @@ const useAuctionable = (config: IUseAuctionConfig) => {
     filterAuctionBidWithdrawn,
   } = buildAuctionFilters(auctionableContract, auctionId);
 
+  const handleAuctionEnded = useCallback(() => {
+    const endedAuction = Object.assign({}, auction, { state: 2 });
+
+    setIsActive(false);
+    setAuction(endedAuction);
+
+    // callback hook for parent component to get final auction when ended
+    onAuctionEnded && onAuctionEnded(endedAuction);
+  }, [auction, onAuctionEnded]);
+
   useContractEvent(
     auctionableContractConfig,
     filterAuctionEnded,
-    () =>
-      setAuction((currentAuction) =>
-        Object.assign({}, currentAuction, { state: 2 }),
-      ),
+    handleAuctionEnded,
     { once: true },
   );
 
@@ -212,11 +276,13 @@ const useAuctionable = (config: IUseAuctionConfig) => {
    */
 
   return {
+    isActive,
     auction,
-    handleAddToBid,
-    handleWithdrawBid,
+    timeRemaining,
     transactionPending,
-    currentConnectedAccountBid,
+    onAddToBid: handleAddToBid,
+    onWithdrawBid: handleWithdrawBid,
+    currentBid: currentConnectedAccountBid,
   };
 };
 

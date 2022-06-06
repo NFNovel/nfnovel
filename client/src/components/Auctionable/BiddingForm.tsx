@@ -3,20 +3,55 @@ import { BigNumber, ethers } from "ethers";
 import { useState } from "react";
 import useConnectedAccount from "src/hooks/use-connected-account";
 
-import type { AuctionModalProps } from "./Auction";
-import type { Auction } from "src/types/auction";
+import { amountInEthText } from "./utils";
+
+import type { Auction as AuctionType } from "src/types/auction";
+import type { IUseAuctionable } from "./use-auctionable";
+
+export const WithdrawBidButton = (props: {
+  currentBid: BigNumber;
+  onWithdrawBid: IUseAuctionable["onWithdrawBid"];
+}) => {
+  const { currentBid, onWithdrawBid } = props;
+
+  const [withdrawSuccessful, setWithdrawSuccessful] = useState<boolean>();
+
+  const handleWithdrawBid = async () => {
+    const success = await onWithdrawBid();
+    setWithdrawSuccessful(success);
+  };
+
+  const label = currentBid.isZero() ?
+    "No bid to withdraw" :
+    `Withdraw ${amountInEthText(currentBid)}`;
+
+  return (
+    <div className="flex flex-col p-10">
+      <Button
+        className="h-20"
+        text={label}
+        onClick={handleWithdrawBid}
+        disabled={withdrawSuccessful !== undefined}
+      />
+      {withdrawSuccessful === true && "Withdraw successful"}
+      {withdrawSuccessful === false && "Failed to withdraw"}
+    </div>
+  );
+};
 
 const BiddingForm = (props: {
-  auction: Auction;
-  currentBid: BigNumber;
-  onAddToBid: AuctionModalProps["onAddToBid"];
-  onWithdrawBid: AuctionModalProps["onWithdrawBid"];
+  auction: AuctionType;
+  currentBid: IUseAuctionable["currentBid"];
+  onAddToBid: IUseAuctionable["onAddToBid"];
+  onWithdrawBid: IUseAuctionable["onWithdrawBid"];
+  transactionPending: IUseAuctionable["transactionPending"];
 }) => {
   const {
     auction,
     currentBid,
     onAddToBid,
-    onWithdrawBid
+    onWithdrawBid,
+    transactionPending
   } = props;
 
   const { connectedAccount, ConnectAccountButtons } = useConnectedAccount();
@@ -42,10 +77,6 @@ const BiddingForm = (props: {
     // indicate success/failure
   };
 
-  const withdrawBid = async () => {
-    const success = await onWithdrawBid();
-  };
-
   if (!connectedAccount) {
     return <ConnectAccountButtons />;
   }
@@ -59,6 +90,8 @@ const BiddingForm = (props: {
   const notEnoughForBidding = currentBid && totalBid?.lte(auction.highestBid);
 
   const isHighestBidder = auction.highestBidder === connectedAccount?.address;
+
+  const shouldDisplayWithdrawButton = auction.highestBidder !== connectedAccount.address;
 
   return (
     <div className="p-5 flex flex-wrap flex-col">
@@ -98,18 +131,15 @@ const BiddingForm = (props: {
               "Place Bid"
           }
           onClick={addToBid}
+          loading={transactionPending}
           disabled={auction.state !== 1 || notEnoughForBidding}
         />
-        <Button
-          className="flex flex-grow"
-          text={
-            currentBid.isZero() ?
-              "Nothing to withdraw" :
-              `Withdraw bids (${ethers.utils.formatEther(currentBid)})`
-          }
-          onClick={withdrawBid}
-          disabled={currentBid.isZero() || isHighestBidder}
-        />
+        {shouldDisplayWithdrawButton && !currentBid.isZero() && (
+          <WithdrawBidButton
+            currentBid={currentBid}
+            onWithdrawBid={onWithdrawBid}
+          />
+        )}
       </div>
     </div>
   );
