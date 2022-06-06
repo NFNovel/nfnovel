@@ -36,7 +36,7 @@ const useNFNovel = () => {
     // NOTE: will update if connected account changes
   }, [connectedAccount]);
 
-  // TODO: expose other calls like this 
+  // TODO: expose other calls like this
   // THINK: have a loading state too?
   const loadAuction = useCallback(
     (auctionId: BigNumberish, setAuction: (auction: Auction) => void) =>

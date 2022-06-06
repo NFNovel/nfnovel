@@ -1,5 +1,4 @@
 import styles from "@styles/Home.module.css";
-import { useState, useEffect } from "react";
 import Novel from "src/components/Novel";
 
 import Header from "../components/Header";
