@@ -2,12 +2,14 @@ import { BigNumber } from "ethers";
 import { useContractEvent } from "wagmi";
 import { useState, useEffect, useCallback } from "react";
 import { DateTime, Duration } from "luxon";
+
+import type { Auctionable } from "@evm/types/Auctionable";
+
 import { useInterval } from "src/utils/use-timers";
 
 import { buildAuctionFilters } from "./utils";
 
 import type { ContractInterface } from "ethers";
-import type { Auctionable } from "@evm/types/Auctionable";
 import type { Auction as AuctionType } from "src/types/auction";
 
 export interface IUseAuctionableConfig {

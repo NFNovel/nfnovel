@@ -1,7 +1,8 @@
 import { ethers } from "ethers";
 
-import type { BigNumberish, EventFilter } from "ethers";
 import type { Auctionable } from "@evm/types/Auctionable";
+
+import type { BigNumberish, EventFilter } from "ethers";
 
 type HandledAuctionableEvent =
   | "AuctionBidRaised"

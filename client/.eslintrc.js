@@ -5,6 +5,9 @@ module.exports = {
     tsconfigRootDir: __dirname,
     project: "./tsconfig.json",
   },
+  settings: {
+    "import/internal-regex": "src/"
+  },
   env: {
     es6: true,
   },
@@ -70,6 +73,13 @@ module.exports = {
           "index",
           "object",
           "type"
+        ],
+        pathGroups: [
+          {
+            pattern: "@evm/**",
+            group: "external",
+            position: "after"
+          },
         ],
         alphabetize: {
           order: "ignore",

@@ -1,6 +1,7 @@
 import { useConnect } from "wagmi";
 import { useContext } from "react";
 import { ButtonGroup, Button } from "@blueprintjs/core";
+
 import { ConnectedAccountContext } from "src/contexts/connected-account-context";
 
 import type { IConnectedAccount } from "src/contexts/connected-account-context";

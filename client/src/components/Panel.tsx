@@ -1,8 +1,9 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button, Drawer, Position, Spinner } from "@blueprintjs/core";
+import { BigNumber } from "ethers";
+
 import useNFNovel from "src/hooks/use-nfnovel";
 import useConnectedAccount from "src/hooks/use-connected-account";
-import { BigNumber } from "ethers";
 
 import AuctionManager from "./Auctionable/Auction";
 import MintTokenButton from "./Auctionable/MintTokenButton";

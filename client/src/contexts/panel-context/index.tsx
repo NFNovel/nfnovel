@@ -6,8 +6,9 @@ import {
   useState,
 } from "react";
 import { create as createIPFSClient } from "ipfs-core";
-import { Page } from "src/types/page";
 import { BigNumber } from "ethers";
+
+import { Page } from "src/types/page";
 import PanelOwnerService from "src/services/panel-owner-service";
 import useNFNovel from "src/hooks/use-nfnovel";
 

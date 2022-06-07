@@ -1,10 +1,12 @@
 import { Button } from "@blueprintjs/core";
 import { useCallback, useState } from "react";
-import useConnectedAccount from "src/hooks/use-connected-account";
 import { useContractEvent } from "wagmi";
 
-import type { BigNumber } from "ethers";
 import type { ERC721 } from "@evm/types/ERC721";
+
+import useConnectedAccount from "src/hooks/use-connected-account";
+
+import type { BigNumber } from "ethers";
 
 type MintTokenButtonProps = {
   erc721Contract: ERC721;

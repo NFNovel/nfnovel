@@ -1,5 +1,6 @@
 import { useCallback, useContext, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
+
 import useNFNovel from "src/hooks/use-nfnovel";
 
 import Page from "./Page";

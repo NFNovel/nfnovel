@@ -6,6 +6,7 @@ import {
   NavbarGroup,
   NavbarHeading,
 } from "@blueprintjs/core";
+
 import useConnectedAccount from "src/hooks/use-connected-account";
 
 function Header() {

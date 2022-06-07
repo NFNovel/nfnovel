@@ -3,11 +3,12 @@ import { useCallback, useEffect, useState } from "react";
 import NFNovelDeployment from "@evm/deployments/NFNovel.json";
 import NFNovelContract from "@evm/contracts/NFNovel/NFNovel.sol/NFNovel.json";
 
+import type { NFNovel } from "@evm/types/NFNovel";
+
 import useConnectedAccount from "./use-connected-account";
 
 import type { BigNumberish } from "ethers";
 import type { Auction } from "src/types/auction";
-import type { NFNovel } from "@evm/types/NFNovel";
 
 export const nfnovelContractConfig = {
   contractInterface: NFNovelContract.abi,
