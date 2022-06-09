@@ -19,6 +19,7 @@ export const nfnovelContractConfig = {
 const useNFNovel = () => {
   const provider = useProvider();
   const { connectedAccount } = useConnectedAccount();
+
   const [nfnovel, setNfnovel] = useState<NFNovel>(
     useContract<NFNovel>({
       ...nfnovelContractConfig,
@@ -39,15 +40,40 @@ const useNFNovel = () => {
 
   // TODO: expose other calls like this
   // THINK: have a loading state too?
-  const loadAuction = useCallback(
+  const getAuction = useCallback(
     (auctionId: BigNumberish, setAuction: (auction: Auction) => void) =>
       nfnovel.auctions(auctionId).then(setAuction),
     [nfnovel],
   );
 
+  const getNovelDetails = useCallback(async () => {
+    const title = await nfnovel.name();
+    const tokenSymbol = await nfnovel.symbol();
+
+    return {
+      title,
+      tokenSymbol,
+    };
+  }, [nfnovel]);
+
+  const getPage = useCallback(
+    async (pageNumber: BigNumberish) => {
+      try {
+        const page = await nfnovel.getPage(pageNumber);
+
+        return page;
+      } catch {
+        return null;
+      }
+    },
+    [nfnovel],
+  );
+
   return {
     nfnovel,
-    loadAuction,
+    getPage,
+    getAuction,
+    getNovelDetails,
     nfnovelContractConfig,
     hasSigner: !!nfnovel.signer,
   };
