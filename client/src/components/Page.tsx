@@ -1,83 +1,91 @@
-/* eslint-disable @next/next/no-img-element */
-import { Spinner } from "@blueprintjs/core";
+import { Spinner } from "@chakra-ui/react";
 import { useContext, useEffect, useState } from "react";
 
 import { PanelData, PanelContext } from "src/contexts/panel-context";
 import useNFNovel from "src/hooks/use-nfnovel";
+import { Page as PageType, PageMetadata } from "src/types/page";
 
-import Panel from "./Panel";
+import PageLayout from "./layout/Page";
 
-import type { Page as PageType } from "src/types/page";
+// TODO: make available at <Page.baseURL>/metadata
+const mockPageMetadata: { [pageNumber: number]: PageMetadata } = {
+  1: {
+    pageNumber: 1,
+    panelRows: [
+      {
+        rowHeight: "100%",
+        panelColumns: [{ panelTokenId: 1, columnWidth: "100%" }],
+      },
+    ],
+  },
+  2: {
+    pageNumber: 2,
+    panelRows: [
+      {
+        rowHeight: "40%",
+        panelColumns: [
+          { panelTokenId: 2, columnWidth: "40%" },
+          { panelTokenId: 3, columnWidth: "60%" },
+        ],
+      },
+      {
+        rowHeight: "20%",
+        panelColumns: [{ panelTokenId: 4, columnWidth: "100%" }],
+      },
+      {
+        rowHeight: "20%",
+        panelColumns: [{ panelTokenId: 5, columnWidth: "100%" }],
+      },
+      {
+        rowHeight: "20%",
+        panelColumns: [{ panelTokenId: 6, columnWidth: "100%" }],
+      },
+    ],
+  },
+};
 
-function Page(props: { pageData: PageType }) {
-  const pageData = props.pageData;
+function Page(props: { page: PageType }) {
+  const { page } = props;
 
-  const parsedPageData = {
-    isRevealed: pageData.isRevealed,
-    baseURI: pageData.baseURI,
-    pageNumber: pageData.pageNumber.toNumber(),
-    panelTokenIds: pageData.panelTokenIds,
-  };
-
-  /**
-   * TODO:
-   *
-   * 1. use the PanelContext (see pages/Test.tsx for example)
-   * 2. store the pagePanelsData as state
-   * 3. use getPagePanelsData and then store the result in pagePanelsData state
-   * (if no pagePanelsData show a <Spinner>)
-   * 4. map over the pagePanelsData and render a <Panel data={panelData} /> for each one
-   *
-   * Panel is a new component (create in components/Panel.tsx then import here)
-   * - props: { data: PanelData }
-   * - it should render an <img src={data.imageSource} /> IF imageSource is not null
-   *
-   * discuss remaining steps
-   */
   const { nfnovel } = useNFNovel();
-
   const panelContext = useContext(PanelContext);
 
+  const [pageMetadata, setPageMetadata] = useState<PageMetadata | null>(null);
   const [pagePanelsData, setpagePanelsData] = useState<PanelData[] | null>(
     null,
   );
 
   useEffect(() => {
-    // define a function that will call getPagePanelsData
     async function loadPanelsData() {
-      if (!panelContext) return;
+      if (!panelContext || !page) return;
 
-      const { getPagePanelsData } = panelContext;
-
-      const panelsData = await getPagePanelsData(pageData);
+      const panelsData = await panelContext.getPagePanelsData(page);
       setpagePanelsData(panelsData);
     }
 
-    // call this function after defining it
     loadPanelsData();
-  }, [pageData, panelContext]);
+  }, [page, panelContext?.getPagePanelsData]);
 
-  if (!nfnovel || !panelContext || !pagePanelsData) return <Spinner />;
+  useEffect(() => {
+    // TODO: implement using IPFS functions
+    const loadPageMetadata = async () => {
+      if (!page) return;
+
+      const metadata = mockPageMetadata[page.pageNumber.toNumber()];
+      setPageMetadata(metadata);
+    };
+
+    loadPageMetadata();
+  }, [page]);
+
+  if (!nfnovel || !panelContext || !pagePanelsData?.length || !pageMetadata)
+    return <Spinner />;
 
   return (
-    <section className="mt-12 relative overflow-hidden py-12 px-4 border border-gray-900 sm:px-8">
-      <div className="text-right mb-10 text-2xl">
-        {parsedPageData.isRevealed == false ?
-          "Active Auction" :
-          "Auction Ended"}
-      </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {pagePanelsData.map((panelData, key) => (
-          <Panel
-            panelData={panelData}
-            key={`page-${pageData.pageNumber.toNumber()}-panel-${key}`}
-          />
-        ))}
-      </div>
-      <div className={"flex justify-center mt-10 text-3xl"}>
-        Page: {parsedPageData.pageNumber}
-      </div>
-    </section>
+    <PageLayout
+      pageMetadata={pageMetadata}
+      pagePanelsData={pagePanelsData}
+    />
   );
 }
 
