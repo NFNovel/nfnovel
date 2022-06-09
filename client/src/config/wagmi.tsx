@@ -1,37 +1,62 @@
-import "@styles/globals.css";
-
+import { publicProvider } from "wagmi/providers/public";
+import { infuraProvider } from "wagmi/providers/infura";
 import { alchemyProvider } from "wagmi/providers/alchemy";
 import { jsonRpcProvider } from "wagmi/providers/jsonRpc";
-import { chain as chains, configureChains, createClient } from "wagmi";
+import {
+  Chain,
+  chain as chains,
+  ChainProvider,
+  configureChains,
+  createClient,
+} from "wagmi";
 
-// TODO: whitelist hosted domain [nfnovels, IPFS]
+const NODE_ENV = process.env.NODE_ENV;
+
+// TODO: whitelist hosted origin(s)
+const INFURA_API_KEY = process.env.INFURA_API_KEY;
 const ALCHEMY_API_KEY = process.env.ALCHEMY_API_KEY;
 
+const localChain: Chain = {
+  id: 31337,
+  name: "local",
+  network: "unknown",
+  rpcUrls: {
+    default: "http://localhost:8545",
+    http: "http://localhost:8545",
+    webSocket: "ws://localhost:8545",
+  },
+  nativeCurrency: {
+    decimals: 18,
+    symbol: "ETH",
+    name: "Ether",
+  },
+};
+
+const supportedChains = NODE_ENV === "production" ?
+  [chains.mainnet, chains.goerli] :
+  [localChain, chains.goerli];
+
+const providers: ChainProvider[] = [
+  jsonRpcProvider({
+    rpc: (rpcChain) => {
+      if (rpcChain.id !== localChain.id) return null;
+
+      const { http, webSocket } = localChain.rpcUrls;
+
+      return {
+        http,
+        webSocket,
+      };
+    },
+  }),
+  infuraProvider({ infuraId: INFURA_API_KEY }),
+  alchemyProvider({ alchemyId: ALCHEMY_API_KEY }),
+  publicProvider(),
+];
+
 const { provider, webSocketProvider } = configureChains(
-  [chains.mainnet, chains.goerli, chains.hardhat],
-  [
-    // supports mainnet and goerli testnet
-    alchemyProvider({ alchemyId: ALCHEMY_API_KEY }),
-    jsonRpcProvider({
-      rpc: (rpcChain) => {
-        switch (rpcChain.id) {
-          case chains.hardhat.id: {
-            const localRpcHost = "localhost:8545";
-
-            return {
-              http: `http://${localRpcHost}`,
-              webSocket: `ws://${localRpcHost}`,
-            };
-          }
-
-          default:
-            return {
-              http: rpcChain.rpcUrls.default,
-            };
-        }
-      },
-    }),
-  ],
+  supportedChains,
+  providers,
 );
 
 const wagmiClient = createClient({
