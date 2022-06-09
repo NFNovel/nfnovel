@@ -14,6 +14,7 @@ import "../Auction/Auctionable.sol";
 import "./interface.sol";
 import "./structures.sol";
 
+// THINK: add a "subscribers" list (only cost of storing address) for people to be eligible for giveaways, track interest, and identify for privileges on discord
 contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
     using Strings for uint256;
     using Counters for Counters.Counter;
@@ -33,7 +34,7 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
     }
 
     // mapping(pageNumber => Page)
-    mapping(uint256 => Page) private pages; // page(pageNumber)
+    mapping(uint256 => Page) private pages;
     // mapping(panelTokenId => pageNumber)
     mapping(uint256 => uint256) private panelPageNumbers;
     // mapping(panelTokenId => panelAuctionId)
