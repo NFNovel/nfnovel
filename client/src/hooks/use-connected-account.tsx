@@ -1,6 +1,6 @@
 import { useConnect } from "wagmi";
 import { useContext } from "react";
-import { ButtonGroup, Button } from "@blueprintjs/core";
+import { ButtonGroup, Button } from "@chakra-ui/react";
 
 import { ConnectedAccountContext } from "src/contexts/connected-account-context";
 

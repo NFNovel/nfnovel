@@ -1,9 +1,11 @@
-import { useCallback, useContext, useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import InfiniteScroll from "react-infinite-scroll-component";
 
 import useNFNovel from "src/hooks/use-nfnovel";
 
 import Page from "./Page";
+
+import type { Page as PageType } from "src/types/page";
 
 function PageList() {
   const { nfnovel } = useNFNovel();
@@ -21,7 +23,7 @@ function PageList() {
           setPages([...pages, pageData]);
         })
         .catch((e: any) => {
-          // console.log(e);
+          console.log(e);
           console.log("setting hasMore(false)");
           setHasMore(false);
         });
@@ -48,10 +50,10 @@ function PageList() {
             </h4>
           }
         >
-          {pages.map((pageData: any, index: number) => (
+          {pages.map((page: PageType, index: number) => (
             <Page
               key={index}
-              pageData={pageData}
+              page={page}
             />
           ))}
         </InfiniteScroll>

@@ -1,5 +1,5 @@
 import { ethers } from "ethers";
-import { Spinner } from "@blueprintjs/core";
+import { Spinner } from "@chakra-ui/react";
 
 import useAuctionable, { IUseAuctionableConfig } from "./use-auctionable";
 import BiddingForm, { WithdrawBidButton } from "./BiddingForm";

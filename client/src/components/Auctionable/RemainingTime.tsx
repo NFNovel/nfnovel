@@ -1,4 +1,4 @@
-import { Spinner } from "@blueprintjs/core";
+import { Spinner } from "@chakra-ui/react";
 import { Duration } from "luxon";
 
 const RemainingTime = (props: { timeRemaining: Duration | null }) => {

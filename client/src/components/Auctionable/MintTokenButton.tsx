@@ -1,4 +1,4 @@
-import { Button } from "@blueprintjs/core";
+import { Button, Spinner } from "@chakra-ui/react";
 import { useCallback, useState } from "react";
 import { useContractEvent } from "wagmi";
 
@@ -71,11 +71,9 @@ const MintTokenButton = (props: MintTokenButtonProps) => {
   if (mintError) return <div>{mintError}</div>;
 
   return (
-    <Button
-      onClick={handleMint}
-      loading={transactionPending}
-      text={buttonLabel || "Mint Token"}
-    />
+    <Button onClick={handleMint}>
+      {transactionPending ? <Spinner /> : buttonLabel || "Mint Token"}
+    </Button>
   );
 };
 
