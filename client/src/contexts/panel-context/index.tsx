@@ -7,6 +7,7 @@ import {
 } from "react";
 import { create as createIPFSClient } from "ipfs-core";
 import { BigNumber } from "ethers";
+import { Spinner, ToastId, useToast } from "@chakra-ui/react";
 
 import { Page } from "src/types/page";
 import PanelOwnerService from "src/services/panel-owner-service";
@@ -14,6 +15,8 @@ import useNFNovel from "src/hooks/use-nfnovel";
 
 import useConnectedAccount from "../../hooks/use-connected-account";
 
+// TODO: refactor to generic ipfsGetMetadata, ipfsGetImageSource
+// expose through useIPFS()
 import { getPanelMetadata, getPanelImageSource } from "./utils";
 
 import type { IPFS } from "ipfs-core";
@@ -34,11 +37,18 @@ export const PanelContext = createContext<PanelContext | null>(null);
 // TODO: refactor into IPFSProvider and usePanelData hook
 const WithPanelData = (props: { children?: React.ReactNode }) => {
   const { children } = props;
+
+  const toast = useToast({
+    position: "top",
+  });
+
   const { nfnovel } = useNFNovel();
   const { connectedAccount } = useConnectedAccount();
 
-  const [loadingIPFS, setLoadingIPFS] = useState(true);
-  const [ipfsClient, setIpfsClient] = useState<IPFS | null>(null);
+  const [ipfsNode, setIpfsNode] = useState<IPFS | null>(null);
+  const [ipfsStatus, setIpfsStatus] = useState<
+  "connected" | "connecting" | "error"
+  >("connecting");
 
   const cachedTokenURIs = useMemo(
     () => new Map<BigNumber | number, string>(),
@@ -46,29 +56,57 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
   );
 
   useEffect(() => {
+    switch (ipfsStatus) {
+      case "connecting":
+        toast({ description: "Connecting to IPFS...", icon: <Spinner /> });
+        break;
+      case "connected":
+        toast({
+          status: "success",
+          description: "Connected to IPFS!",
+        });
+        break;
+      case "error":
+        toast({
+          status: "error",
+          description: "Unable to connect to IPFS :(",
+        });
+    }
+  }, [ipfsStatus]);
+
+  useEffect(() => {
     const loadIpfsClient = async () => {
-      const ipfsClient = await createIPFSClient();
-      setIpfsClient(ipfsClient);
-      setLoadingIPFS(false);
+      try {
+        const ipfsNode = await createIPFSClient();
+
+        setIpfsNode(ipfsNode);
+        setIpfsStatus("connected");
+      } catch (error) {
+        console.error("error loading IPFS", error);
+        setIpfsStatus("error");
+      }
     };
 
-    if (!ipfsClient) loadIpfsClient();
-  }, [ipfsClient]);
+    if (ipfsStatus === "connecting") loadIpfsClient();
+  }, [ipfsStatus]);
 
   const getPagePanelsData = useCallback(
     async (page: Page): Promise<PanelData[]> => {
-      if (!ipfsClient) return [];
+      if (!ipfsNode) return [];
 
       const pagePanelsData = [];
       for (const panelTokenId of page.panelTokenIds) {
-        const isSold = await PanelOwnerService.isPanelSold(
-          nfnovel,
-          panelTokenId,
-        );
+        // const isSold = await PanelOwnerService.isPanelSold(
+        //   nfnovel,
+        //   panelTokenId,
+        // );
 
-        // if: the page is not yet publicly revealed, the connected account is a panel owner (at least 1 panel) and the panel has been sold (owned by any account)
-        // then: the user (owner) should be able  to see the revealed image(s)!
-        const shouldRequestRevealedMetadata = !page.isRevealed && connectedAccount?.isPanelOwner && isSold;
+        // // if: the page is not yet publicly revealed, the connected account is a panel owner (at least 1 panel) and the panel has been sold (owned by any account)
+        // // then: the user (owner) should be able  to see the revealed image(s)!
+        // const shouldRequestRevealedMetadata = !page.isRevealed && connectedAccount?.isPanelOwner && isSold;
+
+        const isSold = true;
+        const shouldRequestRevealedMetadata = true;
 
         let metadata: PanelMetadata | null;
         if (shouldRequestRevealedMetadata) {
@@ -92,14 +130,11 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
             if (panelTokenURI) cachedTokenURIs.set(panelTokenId, panelTokenURI);
           }
 
-          metadata = await getPanelMetadata(
-            ipfsClient,
-            panelTokenURI as ipfsURI,
-          );
+          metadata = await getPanelMetadata(ipfsNode, panelTokenURI as ipfsURI);
         }
 
         const imageSource = await getPanelImageSource(
-          ipfsClient,
+          ipfsNode,
           metadata ? metadata.image : null,
         );
 
@@ -112,12 +147,11 @@ const WithPanelData = (props: { children?: React.ReactNode }) => {
 
       return pagePanelsData;
     },
-    [connectedAccount?.isPanelOwner, ipfsClient, nfnovel, cachedTokenURIs],
+    [connectedAccount?.isPanelOwner, ipfsNode, nfnovel, cachedTokenURIs],
   );
 
   return (
     <PanelContext.Provider value={{ getPagePanelsData }}>
-      {!ipfsClient && "Connecting to IPFS..."}
       {children}
     </PanelContext.Provider>
   );
