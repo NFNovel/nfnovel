@@ -1,15 +1,14 @@
 import React from "react";
 import { Box, Container, Flex, VStack, Spacer } from "@chakra-ui/react";
 
-import { PanelData } from "src/contexts/panel-context";
-
 import Panel from "../Panel";
 
+import type { IpfsPanelData } from "src/hooks/use-nfnovel-ipfs-data";
 import type { PanelProps } from "../Panel";
 import type { heightOrWidth, PageMetadata } from "src/types/page";
 
 type PageLayoutProps = {
-  pagePanelsData: PanelData[];
+  pagePanelsData: IpfsPanelData[];
   pageMetadata: PageMetadata;
 };
 
@@ -59,19 +58,19 @@ const PageLayout = (props: PageLayoutProps) => {
     (panelRow, index) => {
       const panelColumnWithMetadata = panelRow.panelColumns.map(
         (panelColumn) => {
-          const panelData = pagePanelsData.find(
+          const IpfsPanelData = pagePanelsData.find(
             // compare as strings for matching
-            (panelData) =>
-              panelData.panelTokenId.toString() ===
+            (IpfsPanelData) =>
+              IpfsPanelData.panelTokenId.toString() ===
               panelColumn.panelTokenId.toString(),
           );
 
-          if (!panelData)
+          if (!IpfsPanelData)
             throw new Error(
               `Panel data for panelTokenId [${panelColumn.panelTokenId}] not found`,
             );
 
-          return { ...panelColumn, ...panelData };
+          return { ...panelColumn, ...IpfsPanelData };
         },
       );
 

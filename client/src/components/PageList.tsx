@@ -26,7 +26,7 @@ function PageList() {
         setHasMore(false);
       }
     },
-    [nfnovel, pages],
+    [nfnovel, getPage, pages],
   );
 
   useEffect(() => {

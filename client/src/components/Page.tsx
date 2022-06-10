@@ -1,82 +1,43 @@
-import { Spinner } from "@chakra-ui/react";
-import { useContext, useEffect, useState } from "react";
+import { useEffect, useState } from "react";
 
-import { PanelData, PanelContext } from "src/contexts/panel-context";
-import useNFNovel from "src/hooks/use-nfnovel";
+import useNFNovelIpfsData from "src/hooks/use-nfnovel-ipfs-data";
 import { Page as PageType, PageMetadata } from "src/types/page";
 
-import PageLayout from "./layout/Page";
+import PageLayout from "./layout/PageLayout";
 
-// TODO: make available at <Page.baseURL>/metadata
-const mockPageMetadata: { [pageNumber: number]: PageMetadata } = {
-  1: {
-    pageNumber: 1,
-    panelRows: [
-      {
-        rowHeight: "100%",
-        panelColumns: [{ panelTokenId: 1, columnWidth: "100%" }],
-      },
-    ],
-  },
-  2: {
-    pageNumber: 2,
-    panelRows: [
-      {
-        rowHeight: "40%",
-        panelColumns: [
-          { panelTokenId: 2, columnWidth: "40%" },
-          { panelTokenId: 3, columnWidth: "60%" },
-        ],
-      },
-      {
-        rowHeight: "20%",
-        panelColumns: [{ panelTokenId: 4, columnWidth: "100%" }],
-      },
-      {
-        rowHeight: "20%",
-        panelColumns: [{ panelTokenId: 5, columnWidth: "100%" }],
-      },
-      {
-        rowHeight: "20%",
-        panelColumns: [{ panelTokenId: 6, columnWidth: "100%" }],
-      },
-    ],
-  },
-};
+import type { IpfsPanelData } from "src/hooks/use-nfnovel-ipfs-data";
 
 function Page(props: { page: PageType }) {
   const { page } = props;
 
-  const { nfnovel } = useNFNovel();
-  const panelContext = useContext(PanelContext);
-
+  const {
+    ipfsStatus,
+    getPageMetadata,
+    getPagePanelsData
+  } = useNFNovelIpfsData();
   const [pageMetadata, setPageMetadata] = useState<PageMetadata | null>(null);
-  const [pagePanelsData, setpagePanelsData] = useState<PanelData[] | null>(
+  const [pagePanelsData, setpagePanelsData] = useState<IpfsPanelData[] | null>(
     null,
   );
 
   useEffect(() => {
-    async function loadPanelsData() {
-      if (!panelContext || !page) return;
+    const loadPanelsData = async () => {
+      if (ipfsStatus !== "connected" || !page) return;
 
-      const panelsData = await panelContext.getPagePanelsData(page);
+      const panelsData = await getPagePanelsData(page);
       setpagePanelsData(panelsData);
-    }
+    };
 
-    loadPanelsData();
-  }, [page, panelContext?.getPagePanelsData]);
-
-  useEffect(() => {
-    // TODO: implement using IPFS functions
     const loadPageMetadata = async () => {
-      if (!page) return;
+      if (ipfsStatus !== "connected" || !page) return;
 
-      const metadata = mockPageMetadata[page.pageNumber.toNumber()];
-      setPageMetadata(metadata);
+      const pageMetadata = await getPageMetadata(page);
+      setPageMetadata(pageMetadata);
     };
 
     loadPageMetadata();
-  }, [page]);
+    loadPanelsData();
+  }, [ipfsStatus, page, getPageMetadata, getPagePanelsData]);
 
   if (!pagePanelsData?.length || !pageMetadata) return null;
 

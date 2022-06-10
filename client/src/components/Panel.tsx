@@ -10,9 +10,9 @@ import AuctionManager from "./Auctionable/Auction";
 import MintTokenButton from "./Auctionable/MintTokenButton";
 
 import type { PanelColumn } from "src/types/page";
-import type { PanelData } from "src/contexts/panel-context";
+import type { IpfsPanelData } from "src/hooks/use-nfnovel-ipfs-data";
 
-export type PanelProps = PanelData & Omit<PanelColumn, "panelTokenId">;
+export type PanelProps = IpfsPanelData & Omit<PanelColumn, "panelTokenId">;
 
 // TODO: use description to give summary of panel scene on hover
 // THINK: ability to magnify image (once sold, instead of auction)

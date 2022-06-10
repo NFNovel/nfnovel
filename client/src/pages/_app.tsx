@@ -5,9 +5,9 @@ import { useEffect, useState } from "react";
 import { ChakraProvider } from "@chakra-ui/react";
 
 import wagmiClient from "src/config/wagmi";
-import WithPanelData from "src/contexts/panel-context";
-import ConnectedAccountProvider from "src/contexts/connected-account-context";
 import Layout from "src/components/layout/Layout";
+import IPFSProvider from "src/contexts/ipfs-context";
+import ConnectedAccountProvider from "src/contexts/connected-account-context";
 
 import type { AppProps } from "next/app";
 
@@ -24,11 +24,11 @@ function MyApp({ Component, pageProps }: AppProps) {
     <ChakraProvider>
       <WagmiConfig client={wagmiClient}>
         <ConnectedAccountProvider>
-          <WithPanelData>
+          <IPFSProvider>
             <Layout>
               <Component {...pageProps} />
             </Layout>
-          </WithPanelData>
+          </IPFSProvider>
         </ConnectedAccountProvider>
       </WagmiConfig>
     </ChakraProvider>
