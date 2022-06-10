@@ -38,7 +38,7 @@ const Home: NextPage = () => {
     if (!novelDetails) loadNovelDetails();
   }, [novelDetails, getNovelDetails]);
 
-  if (!novelDetails) return <Spinner />;
+  if (!novelDetails) return null;
 
   const { title, tokenSymbol } = novelDetails;
 

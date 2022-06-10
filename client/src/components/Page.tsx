@@ -78,8 +78,7 @@ function Page(props: { page: PageType }) {
     loadPageMetadata();
   }, [page]);
 
-  if (!nfnovel || !panelContext || !pagePanelsData?.length || !pageMetadata)
-    return <Spinner />;
+  if (!pagePanelsData?.length || !pageMetadata) return null;
 
   return (
     <PageLayout
