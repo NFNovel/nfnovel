@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { Spinner } from "@chakra-ui/react";
+import { Box, Spinner } from "@chakra-ui/react";
 
 import Novel from "src/components/Novel";
 import useNFNovel from "src/hooks/use-nfnovel";
@@ -43,10 +43,12 @@ const Home: NextPage = () => {
   const { title, tokenSymbol } = novelDetails;
 
   return (
-    <Novel
-      title={title}
-      id={1}
-    />
+    <Box padding={"20px"}>
+      <Novel
+        id={1}
+        title={title}
+      />
+    </Box>
   );
 };
 

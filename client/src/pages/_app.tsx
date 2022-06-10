@@ -26,7 +26,7 @@ function MyApp({ Component, pageProps }: AppProps) {
         <ConnectedAccountProvider>
           <WithPanelData>
             <Layout>
-              <Component {...pageProps} />;
+              <Component {...pageProps} />
             </Layout>
           </WithPanelData>
         </ConnectedAccountProvider>

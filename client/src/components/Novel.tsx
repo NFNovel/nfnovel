@@ -1,16 +1,12 @@
-import Subheader from "./Subheader";
+import { Box } from "@chakra-ui/react";
+
 import PageList from "./PageList";
 
 function Novel(props: any) {
   return (
-    <>
-      <Subheader
-        title={props.title}
-        author={props.author}
-        summary={props.summary}
-      />
+    <Box>
       <PageList />
-    </>
+    </Box>
   );
 }
 
