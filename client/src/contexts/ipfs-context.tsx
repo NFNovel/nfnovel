@@ -1,15 +1,19 @@
+import { IPFS } from "ipfs-core";
 import { create as createIpfsNode } from "ipfs-core";
 import { Spinner, ToastId, useToast } from "@chakra-ui/react";
-import { IPFS } from "ipfs-core";
 import React, { createContext, useEffect, useRef, useState } from "react";
 
-type IpfsContext = {
+import type { IDResult } from "ipfs-core-types/src/root";
+
+export type IpfsContext = {
   ipfsNode: IPFS | null;
   ipfsStatus: "connected" | "connecting" | "error";
+  ipfsNodeDetails: IDResult | null;
 };
 
 export const ipfsContext = createContext<IpfsContext>({
   ipfsNode: null,
+  ipfsNodeDetails: null,
   ipfsStatus: "connecting",
 });
 
@@ -17,11 +21,12 @@ const IPFSProvider = (props: { children: React.ReactNode }) => {
   const { children } = props;
 
   const statusToast = useToast({
-    position: "bottom-left",
+    position: "top",
   });
   const statusToastRef = useRef<ToastId>();
 
   const [ipfsNode, setIpfsNode] = useState<IPFS | null>(null);
+  const [ipfsNodeDetails, setIpfsNodeDetails] = useState<IDResult | null>(null);
   const [ipfsStatus, setIpfsStatus] = useState<
   "connected" | "connecting" | "error"
   >("connecting");
@@ -39,7 +44,7 @@ const IPFSProvider = (props: { children: React.ReactNode }) => {
     switch (ipfsStatus) {
       case "connected":
         statusToast.update(statusToastRef.current, {
-          duration: 5000,
+          duration: 2000,
           status: "success",
           description: "Connected to IPFS!",
         });
@@ -57,9 +62,11 @@ const IPFSProvider = (props: { children: React.ReactNode }) => {
     const connectToIpfs = async () => {
       try {
         const ipfsNode = await createIpfsNode();
+        const nodeDetails = await ipfsNode.id();
 
         setIpfsNode(ipfsNode);
         setIpfsStatus("connected");
+        setIpfsNodeDetails(nodeDetails);
       } catch (error) {
         console.error("error connecting to IPFS", error);
         setIpfsStatus("error");
@@ -74,6 +81,7 @@ const IPFSProvider = (props: { children: React.ReactNode }) => {
       value={{
         ipfsNode,
         ipfsStatus,
+        ipfsNodeDetails,
       }}
     >
       {children}
