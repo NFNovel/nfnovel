@@ -1,13 +1,23 @@
 import { useCallback, useContext } from "react";
 
-import { ipfsContext } from "src/contexts/ipfs-context";
+import { IpfsContext, ipfsContext } from "src/contexts/ipfs-context";
 
+import type { IPFS } from "ipfs-core";
 import type { ipfsURI } from "src/types/token";
 
 export const stripIpfsProtocol = (ipfsURI: ipfsURI) =>
   ipfsURI.replace("ipfs://", "");
 
 export type UseIpfsOptions = { pinOnLoad?: boolean; throwOnError?: boolean };
+
+export type UseIpfsOutput = {
+  loadJSON: (ipfsUri: ipfsURI) => Promise<Record<any, any> | null>;
+  loadString: (ipfsUri: ipfsURI) => Promise<string | null>;
+  loadImageSource: (ipfsUri: ipfsURI) => Promise<string | null>;
+  node: IpfsContext["ipfsNode"];
+  status: IpfsContext["ipfsStatus"];
+  nodeDetails: IpfsContext["ipfsNodeDetails"];
+};
 
 /**
  * @note check status before calling functions
@@ -21,10 +31,14 @@ const useIpfs = (
     pinOnLoad: true,
     throwOnError: false,
   },
-) => {
+): UseIpfsOutput => {
   const { pinOnLoad, throwOnError } = options;
 
-  const { ipfsNode, ipfsStatus } = useContext(ipfsContext);
+  const {
+    ipfsNode,
+    ipfsStatus,
+    ipfsNodeDetails
+  } = useContext(ipfsContext);
 
   const loadString = useCallback(
     async (ipfsUri: ipfsURI): Promise<string | null> => {
@@ -126,6 +140,7 @@ const useIpfs = (
     loadImageSource,
     node: ipfsNode,
     status: ipfsStatus,
+    nodeDetails: ipfsNodeDetails,
   };
 };
 
