@@ -1,7 +1,8 @@
 import { IPFS } from "ipfs-core";
 import { create as createIpfsNode } from "ipfs-core";
-import { Spinner, ToastId, useToast } from "@chakra-ui/react";
-import React, { createContext, useEffect, useRef, useState } from "react";
+import React, { createContext, useEffect, useState } from "react";
+
+import useErrorToast from "src/hooks/use-error-toast";
 
 import type { IDResult } from "ipfs-core-types/src/root";
 
@@ -20,10 +21,7 @@ export const ipfsContext = createContext<IpfsContext>({
 const IPFSProvider = (props: { children: React.ReactNode }) => {
   const { children } = props;
 
-  const statusToast = useToast({
-    position: "top",
-  });
-  const statusToastRef = useRef<ToastId>();
+  const { renderErrorToast } = useErrorToast({ duration: null });
 
   const [ipfsNode, setIpfsNode] = useState<IPFS | null>(null);
   const [ipfsNodeDetails, setIpfsNodeDetails] = useState<IDResult | null>(null);
@@ -32,31 +30,10 @@ const IPFSProvider = (props: { children: React.ReactNode }) => {
   >("connecting");
 
   useEffect(() => {
-    // use a ref to only show the connecting toast once
-    if (!statusToastRef.current) {
-      statusToastRef.current = statusToast({
-        duration: null,
-        icon: <Spinner />,
-        description: "Connecting to IPFS...",
-      });
+    if (ipfsStatus === "error") {
+      renderErrorToast("Unable to connect to IPFS (try refreshing)");
     }
-
-    switch (ipfsStatus) {
-      case "connected":
-        statusToast.update(statusToastRef.current, {
-          duration: 2000,
-          status: "success",
-          description: "Connected to IPFS!",
-        });
-        break;
-      case "error":
-        statusToast.update(statusToastRef.current, {
-          duration: null,
-          status: "error",
-          description: "Unable to connect to IPFS (try refreshing) :(",
-        });
-    }
-  }, [ipfsStatus, statusToast]);
+  }, [ipfsStatus, renderErrorToast]);
 
   useEffect(() => {
     const connectToIpfs = async () => {
@@ -64,8 +41,8 @@ const IPFSProvider = (props: { children: React.ReactNode }) => {
         const ipfsNode = await createIpfsNode();
         const nodeDetails = await ipfsNode.id();
 
-        setIpfsNode(ipfsNode);
         setIpfsStatus("connected");
+        setIpfsNode(ipfsNode);
         setIpfsNodeDetails(nodeDetails);
       } catch (error) {
         console.error("error connecting to IPFS", error);
