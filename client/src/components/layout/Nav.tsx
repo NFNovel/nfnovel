@@ -2,7 +2,6 @@
 import {
   Box,
   Flex,
-  Avatar,
   Button,
   Menu,
   MenuButton,
@@ -15,77 +14,185 @@ import {
   Center,
   Text,
   Badge,
-  Tooltip,
   ThemingProps,
   Icon,
+  Stat,
+  StatLabel,
+  StatNumber,
+  Table,
+  TableContainer,
+  Tbody,
+  Td,
+  Th,
+  Thead,
+  Tr,
+  TableCaption,
+  StatHelpText,
+  Tag,
 } from "@chakra-ui/react";
 import { MoonIcon, SunIcon } from "@chakra-ui/icons";
 import { FaEthereum } from "react-icons/fa";
-import React, { useMemo } from "react";
+import React, { useEffect } from "react";
+import { useNetwork, useProvider } from "wagmi";
 
 import useConnectedAccount from "src/hooks/use-connected-account";
 import useIpfs, { UseIpfsOutput } from "src/hooks/use-ipfs";
-import { IpfsContext } from "src/contexts/ipfs-context";
+import { IConnectedAccount } from "src/contexts/connected-account-context";
+import useErrorToast from "src/hooks/use-error-toast";
 
-import type { IPFS } from "ipfs-core";
+const ipfsStatusColors: {
+  [key in UseIpfsOutput["status"]]: {
+    colorScheme: ThemingProps<"Badge">["colorScheme"];
+    // icon: React.ReactNode;
+  };
+} = {
+  error: {
+    colorScheme: "red",
+  },
+  connected: {
+    colorScheme: "green",
+  },
+  connecting: {
+    colorScheme: "yellow",
+  },
+};
 
-type IPFSStatusProps = Pick<UseIpfsOutput, "status" | "nodeDetails">;
+const IPFSStatus = () => {
+  const { status } = useIpfs();
 
-const IPFSStatus = (props: IPFSStatusProps) => {
-  const { status, nodeDetails } = props;
-
-  const statusDisplays = useMemo<{
-    [key in IPFSStatusProps["status"]]: {
-      colorScheme: ThemingProps<"Badge">["colorScheme"];
-      // icon: React.ReactNode;
-    };
-  }>(
-    () => ({
-      error: {
-        colorScheme: "red",
-        // icon: <NotAllowedIcon />,
-      },
-      connected: {
-        colorScheme: "green",
-        // icon: <CheckCircleIcon />,
-      },
-      connecting: {
-        colorScheme: "yellow",
-        // icon: <SpinnerIcon />,
-      },
-    }),
-    [],
-  );
-
-  const statusDisplay = statusDisplays[status];
+  const statusDisplay = ipfsStatusColors[status];
 
   return (
-    <Tooltip
-      isDisabled={!nodeDetails}
-      label={<Text>Node ID {nodeDetails?.id}</Text>}
-    >
-      <Center>
-        <Text fontWeight="bold">
-          IPFS
-          <Badge
-            ml={2}
-            variant="subtle"
-            colorScheme={statusDisplay.colorScheme}
-          >
-            {status.toUpperCase()}
-          </Badge>
+    <Center>
+      <Text fontWeight="bold">
+        IPFS
+        <Badge
+          ml={2}
+          variant="subtle"
+          colorScheme={statusDisplay.colorScheme}
+        >
+          {status.toUpperCase()}
+        </Badge>
+      </Text>
+    </Center>
+  );
+};
+
+const ConnectedAccountDetails = (props: {
+  connectedAccount: IConnectedAccount;
+}) => {
+  const { connectedAccount } = props;
+
+  const { network } = useProvider();
+  const { activeChain } = useNetwork();
+  const { renderErrorToast } = useErrorToast({
+    duration: 10 * 1000,
+  });
+
+  const networkIsSupported = activeChain?.id === network.chainId;
+  const truncatedAddress = `${connectedAccount.address.slice(0, 6)}...`;
+
+  useEffect(() => {
+    if (!networkIsSupported) {
+      const UnsupportedNetworkMessage = () => (
+        <Text>
+          Network <Tag color={"black"}>{activeChain?.name}</Tag> [
+          <Tag color={"black"}>{activeChain?.id}</Tag>] is not supported. Change
+          networks with your wallet to <Tag color={"black"}>{network.name}</Tag>{" "}
+          [<Tag color={"black"}>{network.chainId}</Tag>]
         </Text>
-      </Center>
-    </Tooltip>
+      );
+      renderErrorToast(<UnsupportedNetworkMessage />);
+    }
+  }, [activeChain, network, networkIsSupported, renderErrorToast]);
+
+  return (
+    <Box>
+      <TableContainer>
+        <Table
+          size="sm"
+          variant="unstyled"
+        >
+          <Thead>
+            <Tr>
+              <Th>Network</Th>
+              <Th>Chain ID</Th>
+            </Tr>
+          </Thead>
+          <Tbody>
+            <Tr>
+              <Td alignContent={"center"}>
+                <Badge colorScheme={networkIsSupported ? "green" : "red"}>
+                  {activeChain?.name}
+                </Badge>
+              </Td>
+              <Td alignContent={"center"}>
+                <Badge colorScheme={networkIsSupported ? "green" : "red"}>
+                  {activeChain?.id}
+                </Badge>
+              </Td>
+            </Tr>
+          </Tbody>
+          <TableCaption>
+            <Center>
+              Connected as: <Badge ml={2}>{truncatedAddress}</Badge>
+            </Center>
+          </TableCaption>
+        </Table>
+      </TableContainer>
+
+      <MenuDivider />
+      <Stat textAlign={"center"}>
+        <StatHelpText>
+          <Badge colorScheme={connectedAccount.isPanelOwner ? "green" : "red"}>
+            {connectedAccount.isPanelOwner ? "OWNER" : "NOT AN OWNER"}
+          </Badge>
+        </StatHelpText>
+        {connectedAccount.isPanelOwner && (
+          <>
+            <StatLabel>Owned Panels</StatLabel>
+            <StatNumber>
+              {connectedAccount.ownedPanelTokenIds.length}
+            </StatNumber>
+          </>
+        )}
+      </Stat>
+
+      {connectedAccount.isPanelOwner && (
+        <>
+          <MenuDivider />
+          <MenuItem>Authenticate as Owner</MenuItem>
+        </>
+      )}
+    </Box>
+  );
+};
+
+const Web3Login = () => {
+  const { connectedAccount, ConnectAccountButtons } = useConnectedAccount();
+
+  return (
+    <Menu>
+      <MenuButton as={Button}>
+        <Icon
+          as={FaEthereum}
+          boxSize="1.25em"
+          color="orange.400"
+        />
+      </MenuButton>
+      <MenuList>
+        {connectedAccount ? (
+          <ConnectedAccountDetails connectedAccount={connectedAccount} />
+        ) : (
+          <ConnectAccountButtons />
+        )}
+      </MenuList>
+    </Menu>
   );
 };
 
 export default function Nav() {
-  const { status, nodeDetails } = useIpfs();
   const { colorMode, toggleColorMode } = useColorMode();
-
-  // TODO: wire up
-  const { connectedAccount, ConnectAccountButtons } = useConnectedAccount();
 
   return (
     <Box
@@ -104,47 +211,9 @@ export default function Nav() {
             direction={"row"}
             spacing={4}
           >
-            <IPFSStatus
-              status={status}
-              nodeDetails={nodeDetails}
-            />
+            <IPFSStatus />
 
-            <Menu>
-              <MenuButton as={Button}>
-                <Icon
-                  as={FaEthereum}
-                  boxSize="1.25em"
-                  color="orange.400"
-                />
-              </MenuButton>
-              <MenuList alignItems={"center"}>
-                <br />
-                <Center>
-                  {/* 
-                    - chain ID
-                    - current balance
-                    - truncated address
-
-                    ||
-
-                    - login buttons
-                  */}
-                  <Avatar
-                    size={"2xl"}
-                    src={"https://avatars.dicebear.com/api/male/username.svg"}
-                  />
-                </Center>
-                <br />
-                <Center>
-                  <p>Username</p>
-                </Center>
-                <br />
-                <MenuDivider />
-                <MenuItem>Your Servers</MenuItem>
-                <MenuItem>Account Settings</MenuItem>
-                <MenuItem>Logout</MenuItem>
-              </MenuList>
-            </Menu>
+            <Web3Login />
 
             <Button onClick={toggleColorMode}>
               {colorMode === "light" ? <MoonIcon /> : <SunIcon />}
