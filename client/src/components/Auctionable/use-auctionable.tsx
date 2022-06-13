@@ -37,6 +37,7 @@ export const computeTimeRemaining = (auction: AuctionType) => {
   return remainingTime.toMillis() <= 0 ? Duration.fromMillis(0) : remainingTime;
 };
 
+// THINK: add onWithdrawableBid hook (to indicate to user that they have a bid to withdraw)
 const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
   const {
     auctionId,

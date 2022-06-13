@@ -55,8 +55,8 @@ const mockPageMetadata: { [pageNumber: string]: PageMetadata } = {
 };
 
 const useNFNovelIpfsData = () => {
-  const { nfnovel } = useNFNovel();
   const { connectedAccount } = useConnectedAccount();
+  const { isPanelSold, getPanelTokenUri } = useNFNovel();
   const {
     status,
     loadJSON,
@@ -78,10 +78,7 @@ const useNFNovelIpfsData = () => {
     async (page: PageType): Promise<IpfsPanelData[]> => {
       const pagePanelsData = [];
       for (const panelTokenId of page.panelTokenIds) {
-        const isSold = await PanelOwnerService.isPanelSold(
-          nfnovel,
-          panelTokenId,
-        );
+        const isSold = await isPanelSold(panelTokenId);
 
         // if: the page is not yet publicly revealed, the connected account is a panel owner (at least 1 panel) and the panel has been sold (owned by any account)
         // then: the user (owner) should be able  to see the revealed image(s)!
@@ -97,24 +94,20 @@ const useNFNovelIpfsData = () => {
           let panelTokenURI = cachedTokenURIs.get(panelTokenId) || null;
           if (!panelTokenURI) {
             // not in cache, attempt to load
-            panelTokenURI = await nfnovel
-              .tokenURI(panelTokenId)
-              .catch((error) => {
-                console.error("error loading panel token URI", error.message);
-
-                return null;
-              });
+            panelTokenURI = await getPanelTokenUri(panelTokenId);
 
             // if found then add to cache
             if (panelTokenURI) cachedTokenURIs.set(panelTokenId, panelTokenURI);
           }
 
-          metadata = await loadJSON(panelTokenURI as ipfsURI);
+          metadata = (await loadJSON(
+            panelTokenURI as ipfsURI,
+          )) as PanelMetadata;
         }
 
         if (!metadata)
           throw new Error(
-            `Failed to load revealed panel metadata for panelTokenId: ${panelTokenId.toString()}`,
+            `Failed to load panel metadata for panelTokenId: ${panelTokenId.toString()}`,
           );
 
         const imageSource = await loadImageSource(metadata.image);
@@ -133,11 +126,12 @@ const useNFNovelIpfsData = () => {
       return pagePanelsData;
     },
     [
-      connectedAccount?.isPanelOwner,
-      nfnovel,
-      cachedTokenURIs,
-      loadImageSource,
       loadJSON,
+      isPanelSold,
+      loadImageSource,
+      cachedTokenURIs,
+      getPanelTokenUri,
+      connectedAccount?.isPanelOwner,
     ],
   );
 

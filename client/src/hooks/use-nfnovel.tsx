@@ -2,14 +2,14 @@ import { useContract, useProvider } from "wagmi";
 import { useCallback, useEffect, useState } from "react";
 import NFNovelDeployment from "@evm/deployments/NFNovel.json";
 import NFNovelContract from "@evm/contracts/NFNovel/NFNovel.sol/NFNovel.json";
-
-import type { NFNovel } from "@evm/types/NFNovel";
+import { NFNovel } from "@evm/types/NFNovel";
 
 import useConnectedAccount from "./use-connected-account";
 
 import type { BigNumberish } from "ethers";
 import type { Auction } from "src/types/auction";
 
+// FUTURE: set as input arg to useNFNovel (based on address from NFNovels lookup in routing)
 export const nfnovelContractConfig = {
   contractInterface: NFNovelContract.abi,
   addressOrName:
@@ -20,62 +20,93 @@ const useNFNovel = () => {
   const provider = useProvider();
   const { connectedAccount } = useConnectedAccount();
 
-  const [nfnovel, setNfnovel] = useState<NFNovel>(
-    useContract<NFNovel>({
-      ...nfnovelContractConfig,
-      signerOrProvider: provider,
-    }),
+  const [nfnovelSigner, setNfnovelSigner] = useState<NFNovel>(
+    useContract<NFNovel>(nfnovelContractConfig),
   );
 
+  const nfnovelReader = useContract<NFNovel>({
+    ...nfnovelContractConfig,
+    signerOrProvider: provider,
+  });
+
+  // NOTE: updates if signer changes
   useEffect(() => {
     const connectSigner = () => {
       if (!connectedAccount?.signer) return;
 
-      setNfnovel((nfnovel) => nfnovel.connect(connectedAccount.signer));
+      setNfnovelSigner((nfnovelSigner) =>
+        nfnovelSigner.connect(connectedAccount.signer),
+      );
     };
 
     connectSigner();
-    // NOTE: will update if connected account changes
-  }, [connectedAccount]);
-
-  // TODO: expose other calls like this
-  // THINK: have a loading state too?
-  const getAuction = useCallback(
-    (auctionId: BigNumberish, setAuction: (auction: Auction) => void) =>
-      nfnovel.auctions(auctionId).then(setAuction),
-    [nfnovel],
-  );
+  }, [connectedAccount?.signer]);
 
   const getNovelDetails = useCallback(async () => {
-    const title = await nfnovel.name();
-    const tokenSymbol = await nfnovel.symbol();
+    const title = await nfnovelReader.name();
+    const tokenSymbol = await nfnovelReader.symbol();
 
     return {
       title,
       tokenSymbol,
     };
-  }, [nfnovel]);
+  }, [nfnovelReader]);
 
   const getPage = useCallback(
     async (pageNumber: BigNumberish) => {
       try {
-        const page = await nfnovel.getPage(pageNumber);
+        const page = await nfnovelReader.getPage(pageNumber);
 
         return page;
       } catch {
         return null;
       }
     },
-    [nfnovel],
+    [nfnovelReader],
+  );
+
+  const getPanelTokenUri = useCallback(
+    async (panelTokenId: BigNumberish) => {
+      try {
+        const panelTokenUri = await nfnovelReader.tokenURI(panelTokenId);
+
+        return panelTokenUri;
+      } catch {
+        return null;
+      }
+    },
+    [nfnovelReader],
+  );
+
+  const isPanelSold = useCallback(
+    async (panelTokenId: BigNumberish) => {
+      try {
+        await nfnovelReader.ownerOf(panelTokenId);
+
+        return true;
+      } catch {
+        return false;
+      }
+    },
+    [nfnovelReader],
+  );
+
+  const getPanelAuctionId = useCallback(
+    async (panelTokenId: BigNumberish) =>
+      nfnovelReader.getPanelAuctionId(panelTokenId),
+    [nfnovelReader],
   );
 
   return {
-    nfnovel,
+    nfnovelReader,
+    nfnovelSigner,
+    hasSigner: !!nfnovelSigner.signer,
     getPage,
-    getAuction,
+    isPanelSold,
     getNovelDetails,
+    getPanelTokenUri,
+    getPanelAuctionId,
     nfnovelContractConfig,
-    hasSigner: !!nfnovel.signer,
   };
 };
 

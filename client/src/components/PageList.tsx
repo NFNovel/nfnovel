@@ -9,15 +9,13 @@ import Page from "./Page";
 import type { Page as PageType } from "src/types/page";
 
 function PageList() {
-  const { nfnovel, getPage } = useNFNovel();
+  const { getPage } = useNFNovel();
   const [pages, setPages]: any = useState([]);
 
   const [hasMore, setHasMore] = useState(true);
 
   const fetchPageData = useCallback(
     async (pageNumber: number) => {
-      if (!nfnovel) return;
-
       const page = await getPage(pageNumber);
 
       if (page) {
@@ -26,7 +24,7 @@ function PageList() {
         setHasMore(false);
       }
     },
-    [nfnovel, getPage, pages],
+    [getPage, pages],
   );
 
   useEffect(() => {

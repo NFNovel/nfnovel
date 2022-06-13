@@ -1,6 +1,6 @@
 import { useConnect } from "wagmi";
 import { useContext } from "react";
-import { ButtonGroup, Button } from "@chakra-ui/react";
+import { ButtonGroup, Button, Spinner } from "@chakra-ui/react";
 
 import { ConnectedAccountContext } from "src/contexts/connected-account-context";
 
@@ -43,15 +43,16 @@ const ConnectAccountButtons = () => {
     <ButtonGroup>
       {connectors.map((connector) => (
         <Button
-          disabled={!connector.ready}
+          disabled={
+            !connector.ready ||
+            (isConnecting && connector.id === pendingConnector?.id)
+          }
           key={connector.id}
           onClick={() => connect(connector)}
         >
           Connect with {connector.name}
           {!connector.ready && " (unsupported)"}
-          {isConnecting &&
-            connector.id === pendingConnector?.id &&
-            " (connecting)"}
+          {isConnecting && connector.id === pendingConnector?.id && <Spinner />}
         </Button>
       ))}
 
