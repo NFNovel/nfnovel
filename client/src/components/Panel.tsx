@@ -24,7 +24,7 @@ const Panel = (props: PanelProps) => {
     panelTokenId
   } = props;
 
-  const { nfnovel } = useNFNovel();
+  const { nfnovelSigner, getPanelAuctionId } = useNFNovel();
   const { connectedAccount } = useConnectedAccount();
 
   const [auctionIsOpen, setAuctionIsOpen] = useState<boolean>(false);
@@ -33,11 +33,11 @@ const Panel = (props: PanelProps) => {
 
   useEffect(() => {
     const loadPanelAuctionId = async () => {
-      setPanelAuctionId(await nfnovel.getPanelAuctionId(panelTokenId));
+      setPanelAuctionId(await getPanelAuctionId(panelTokenId));
     };
 
     if (!panelAuctionId) loadPanelAuctionId();
-  }, [panelTokenId, panelAuctionId, nfnovel]);
+  }, [panelTokenId, panelAuctionId, getPanelAuctionId]);
 
   const openAuctionModal = useCallback(
     () => !auctionIsOpen && setAuctionIsOpen(true),
@@ -51,7 +51,7 @@ const Panel = (props: PanelProps) => {
 
   const handleMintPanel = useCallback(async () => {
     try {
-      await nfnovel.mintPanel(panelTokenId);
+      await nfnovelSigner.mintPanel(panelTokenId);
 
       return true;
     } catch (error: any) {
@@ -62,7 +62,7 @@ const Panel = (props: PanelProps) => {
 
       return false;
     }
-  }, [nfnovel, panelTokenId]);
+  }, [nfnovelSigner, panelTokenId]);
 
   if (!imageSource || !metadata) return null;
 
@@ -97,7 +97,7 @@ const Panel = (props: PanelProps) => {
       >
         <AuctionManager
           auctionId={panelAuctionId}
-          auctionableContract={nfnovel}
+          auctionableContract={nfnovelSigner}
           connectedAccountAddress={connectedAccount?.address}
           token={{
             metadata,
@@ -108,7 +108,7 @@ const Panel = (props: PanelProps) => {
             <MintTokenButton
               buttonLabel="Mint Panel!"
               onMint={handleMintPanel}
-              erc721Contract={nfnovel}
+              erc721Contract={nfnovelSigner}
             />
           )}
         />
