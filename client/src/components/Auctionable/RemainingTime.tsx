@@ -1,23 +1,38 @@
-import { Spinner } from "@chakra-ui/react";
-import { Duration } from "luxon";
+import {
+  Text,
+  CircularProgress,
+  CircularProgressLabel,
+} from "@chakra-ui/react";
 
-const RemainingTime = (props: { timeRemaining: Duration | null }) => {
-  const { timeRemaining } = props;
+import type { Auction } from "src/types/auction";
+import type { IUseAuctionable } from "./use-auctionable";
 
-  if (!timeRemaining) return <Spinner />;
+const RemainingTime = (props: {
+  auction: Auction;
+  timeRemaining: IUseAuctionable["timeRemaining"];
+}) => {
+  const { auction, timeRemaining } = props;
 
-  const timeRemainingMessage = `Time remaining: ${timeRemaining.toFormat(
-    "hh 'hours', mm 'minutes', ss 'seconds'",
-  )}`;
+  const remainingSeconds = timeRemaining.toMillis() / 1000;
+  const totalAuctionTime = auction.endTime.toNumber() - auction.startTime.toNumber();
+
+  const progress = 100 * (1 - remainingSeconds / totalAuctionTime);
+
+  const timeRemainingFormat = timeRemaining.minutes > 1 ? "hh 'h' mm 'm'" : "mm 'm' ss 's'";
+  const timeRemainingFormatted = timeRemaining.toMillis() === 0 ?
+    "Ended!" :
+    timeRemaining.toFormat(timeRemainingFormat);
 
   return (
-    <div className="border-2 rounded-lg mt-10 h-10 p-2">
-      <div>
-        {timeRemaining.toMillis() <= 0 ?
-          "Auction ended!" :
-          timeRemainingMessage}
-      </div>
-    </div>
+    <CircularProgress
+      size="80px"
+      value={progress}
+      color={timeRemaining.toMillis() === 0 ? "red" : "blue"}
+    >
+      <CircularProgressLabel>
+        <Text fontSize={"x-small"}>{timeRemainingFormatted}</Text>
+      </CircularProgressLabel>
+    </CircularProgress>
   );
 };
 
