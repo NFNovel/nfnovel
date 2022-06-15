@@ -1,5 +1,11 @@
 import { useSigner } from "wagmi";
-import { createContext, useState, useMemo, useEffect } from "react";
+import {
+  createContext,
+  useState,
+  useMemo,
+  useEffect,
+  useCallback,
+} from "react";
 
 import PanelOwnerService from "src/services/panel-owner-service";
 
@@ -12,10 +18,16 @@ export interface IConnectedAccount {
   ownedPanelTokenIds: (BigNumber | number)[];
 }
 
-export const ConnectedAccountContext = createContext<{
+export interface IConnectedAccountContext {
   connectedAccount: IConnectedAccount | null;
-}>({
+  updateConnectedAccount: () => Promise<void>;
+}
+
+export const ConnectedAccountContext = createContext<IConnectedAccountContext>({
   connectedAccount: null,
+  updateConnectedAccount: async () => {
+    return;
+  },
 });
 
 const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
@@ -26,33 +38,41 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
 
   // great tip to prevent needless re-rendering!
   // https://kentcdodds.com/blog/application-state-management-with-react
-  const value = useMemo(() => ({ connectedAccount }), [connectedAccount]);
+  const connectedAccountMemo = useMemo(
+    () => ({ connectedAccount }),
+    [connectedAccount],
+  );
 
-  useEffect(() => {
-    const updateConnectedAccount = async () => {
-      if (!signer) return;
+  const updateConnectedAccount = useCallback(async () => {
+    if (!signer) return;
 
-      const address = await signer.getAddress();
+    const address = await signer.getAddress();
 
-      const ownedPanelTokenIds = await PanelOwnerService.getOwnedPanelTokenIds(
-        address,
-      );
+    const ownedPanelTokenIds = await PanelOwnerService.getOwnedPanelTokenIds(
+      address,
+    );
 
-      const connectedAccount: IConnectedAccount = {
-        signer,
-        address,
-        ownedPanelTokenIds,
-        isPanelOwner: ownedPanelTokenIds.length > 0,
-      };
-
-      setConnectedAccount(connectedAccount);
+    const connectedAccount: IConnectedAccount = {
+      signer,
+      address,
+      ownedPanelTokenIds,
+      isPanelOwner: ownedPanelTokenIds.length > 0,
     };
 
-    updateConnectedAccount();
+    setConnectedAccount(connectedAccount);
   }, [signer]);
 
+  useEffect(() => {
+    updateConnectedAccount();
+  }, [updateConnectedAccount]);
+
   return (
-    <ConnectedAccountContext.Provider value={value}>
+    <ConnectedAccountContext.Provider
+      value={{
+        updateConnectedAccount,
+        connectedAccount: connectedAccountMemo.connectedAccount,
+      }}
+    >
       {children}
     </ConnectedAccountContext.Provider>
   );

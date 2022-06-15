@@ -4,7 +4,7 @@ import { ButtonGroup, Button, Spinner } from "@chakra-ui/react";
 
 import { ConnectedAccountContext } from "src/contexts/connected-account-context";
 
-import type { IConnectedAccount } from "src/contexts/connected-account-context";
+import type { IConnectedAccountContext } from "src/contexts/connected-account-context";
 
 const ConnectAccountButtons = () => {
   const {
@@ -61,13 +61,14 @@ const ConnectAccountButtons = () => {
   );
 };
 
-const useConnectedAccount = (): {
-  connectedAccount: IConnectedAccount | null;
+const useConnectedAccount = (): IConnectedAccountContext & {
   ConnectAccountButtons: () => JSX.Element;
 } => {
-  const { connectedAccount } = useContext(ConnectedAccountContext);
+  const { connectedAccount, updateConnectedAccount } = useContext(
+    ConnectedAccountContext,
+  );
 
-  return { connectedAccount, ConnectAccountButtons };
+  return { connectedAccount, updateConnectedAccount, ConnectAccountButtons };
 };
 
 export default useConnectedAccount;
