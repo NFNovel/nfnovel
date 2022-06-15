@@ -1,4 +1,4 @@
-import { ethers } from "ethers";
+import { BigNumber, ethers } from "ethers";
 
 import type { Auctionable } from "@evm/types/Auctionable";
 
@@ -30,5 +30,8 @@ export const buildAuctionFilters = (
   filterAuctionEnded: auctionableContract.filters.AuctionEnded(auctionId),
 });
 
-export const amountInEthText = (amountInWei: BigNumberish) =>
-  `${ethers.utils.formatEther(amountInWei)} ETH`;
+export const convertToEth = (amountInWei: BigNumberish, withCurrency = false) =>
+  `${ethers.utils.formatEther(amountInWei)}${withCurrency ? " Ξ" : ""}`;
+
+export const convertToWei = (amountInEth: string): BigNumber =>
+  ethers.utils.parseEther(amountInEth);
