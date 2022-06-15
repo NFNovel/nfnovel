@@ -14,7 +14,7 @@ import {
   StatLabel,
   StatNumber,
 } from "@chakra-ui/react";
-import { BigNumber, ethers } from "ethers";
+import { BigNumber } from "ethers";
 import { useState } from "react";
 
 import useConnectedAccount from "src/hooks/use-connected-account";
@@ -32,7 +32,7 @@ export const WithdrawBidButton = (props: {
   const {
     currentBid,
     canWithdraw,
-    onWithdrawBid
+    onWithdrawBid,
   } = props;
 
   const handleWithdrawBid = async () => {
@@ -194,7 +194,7 @@ const BiddingForm = (props: {
             size={"lg"}
             variant={"outline"}
             flexBasis={"auto"}
-            disabled={!isActive}
+            disabled={!isActive || notEnoughForBidding}
             onClick={handleAddToBid}
           >
             Add to Bid

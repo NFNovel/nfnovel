@@ -13,7 +13,7 @@ function Page(props: { page: PageType }) {
   const {
     ipfsStatus,
     getPageMetadata,
-    getPagePanelsData
+    getPagePanelsData,
   } = useNFNovelIpfsData();
   const [pageMetadata, setPageMetadata] = useState<PageMetadata | null>(null);
   const [pagePanelsData, setpagePanelsData] = useState<IpfsPanelData[] | null>(

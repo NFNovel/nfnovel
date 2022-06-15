@@ -12,14 +12,11 @@ module.exports = {
     es6: true,
   },
   ignorePatterns: [
-    "tailwind.config.js",
     "node_modules",
     "build",
     "coverage",
     ".eslintrc.js",
     "next.config.js",
-    "tailwind.config.js",
-    "poscss.config.js"
   ],
   plugins: [
     "import",
@@ -107,6 +104,7 @@ module.exports = {
     "@typescript-eslint/indent": [
       "error",
       2
-    ]
+    ],
+    "comma-dangle": ["error", "always-multiline"]
   },
 };

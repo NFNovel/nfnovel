@@ -60,7 +60,7 @@ const useNFNovelIpfsData = () => {
   const {
     status,
     loadJSON,
-    loadImageSource
+    loadImageSource,
   } = useIpfs({
     pinOnLoad: true,
     throwOnError: false,

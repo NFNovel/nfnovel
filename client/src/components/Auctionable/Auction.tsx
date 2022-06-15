@@ -41,7 +41,7 @@ const HighestBid = (props: {
     isActive,
     highestBid,
     highestBidder,
-    connectedAccountAddress
+    connectedAccountAddress,
   } = props;
 
   let formattedHighestBidder;

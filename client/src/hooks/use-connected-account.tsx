@@ -14,7 +14,7 @@ const ConnectAccountButtons = () => {
     connect,
     connectors,
     isConnecting,
-    pendingConnector
+    pendingConnector,
   } = useConnect();
 
   if (!window.ethereum)

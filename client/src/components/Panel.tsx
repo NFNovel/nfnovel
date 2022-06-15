@@ -27,7 +27,7 @@ const Panel = (props: PanelProps) => {
     metadata,
     imageSource,
     columnWidth,
-    panelTokenId
+    panelTokenId,
   } = props;
 
   const { connectedAccount, updateConnectedAccount } = useConnectedAccount();
@@ -35,7 +35,7 @@ const Panel = (props: PanelProps) => {
     nfnovelSigner,
     nfnovelReader,
     isPanelSold,
-    getPanelAuctionId
+    getPanelAuctionId,
   } = useNFNovel();
   const { isOpen, onToggle } = useDisclosure();
 

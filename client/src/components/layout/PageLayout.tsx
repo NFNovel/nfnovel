@@ -32,7 +32,7 @@ const PanelRow = (props: PanelRowProps) => {
           metadata,
           imageSource,
           columnWidth,
-          panelTokenId
+          panelTokenId,
         } = panelColumn;
 
         return (

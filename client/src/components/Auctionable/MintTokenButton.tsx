@@ -20,7 +20,7 @@ const MintTokenButton = (props: MintTokenButtonProps) => {
     onMint,
     onTransfer,
     buttonLabel,
-    erc721Contract
+    erc721Contract,
   } = props;
 
   const { connectedAccount, ConnectAccountButtons } = useConnectedAccount();

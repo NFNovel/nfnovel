@@ -37,7 +37,7 @@ const useIpfs = (
   const {
     ipfsNode,
     ipfsStatus,
-    ipfsNodeDetails
+    ipfsNodeDetails,
   } = useContext(ipfsContext);
 
   const loadString = useCallback(
