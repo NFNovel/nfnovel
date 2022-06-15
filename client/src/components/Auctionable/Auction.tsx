@@ -1,13 +1,24 @@
 import { ethers } from "ethers";
-import { Spinner } from "@chakra-ui/react";
+import {
+  Box,
+  Divider,
+  Flex,
+  Spinner,
+  Stat,
+  StatHelpText,
+  StatLabel,
+  StatNumber,
+} from "@chakra-ui/react";
 
-import useAuctionable, { IUseAuctionableConfig } from "./use-auctionable";
-import BiddingForm, { WithdrawBidButton } from "./BiddingForm";
+import { convertToEth } from "./utils";
 import RemainingTime from "./RemainingTime";
-import { amountInEthText } from "./utils";
+import useAuctionable from "./use-auctionable";
+import BiddingForm, { WithdrawBidButton } from "./BiddingForm";
 
+import type { Auction as AuctionType } from "src/types/auction";
 import type { BigNumberish } from "ethers";
 import type { IERC721TokenMetadata } from "src/types/token";
+import type { IUseAuctionable, IUseAuctionableConfig } from "./use-auctionable";
 
 export type AuctionableTokenDetails = {
   imageSource: string;
@@ -20,13 +31,53 @@ export type AuctionProps = IUseAuctionableConfig & {
   ClaimTokenButton: () => JSX.Element;
 };
 
+const HighestBid = (props: {
+  highestBid: AuctionType["highestBid"];
+  isActive: IUseAuctionable["isActive"];
+  highestBidder: AuctionType["highestBidder"];
+  connectedAccountAddress: AuctionProps["connectedAccountAddress"];
+}) => {
+  const {
+    isActive,
+    highestBid,
+    highestBidder,
+    connectedAccountAddress
+  } = props;
+
+  let formattedHighestBidder;
+  let highestBidLabel = isActive ? "Highest bid" : "Winning bid";
+
+  if (highestBidder === ethers.constants.AddressZero) {
+    highestBidLabel = "Starting bid";
+    formattedHighestBidder = "No bids yet";
+  } else if (highestBidder === connectedAccountAddress) {
+    formattedHighestBidder = isActive ?
+      "You are the highest bidder!" :
+      "You won the auction!";
+  } else {
+    formattedHighestBidder = `${
+      isActive ? "Winning" : "Highest"
+    } bidder: ${highestBidder.slice(0, 6)}`;
+  }
+
+  const formattedHighestBid = convertToEth(highestBid, true);
+
+  return (
+    <Stat>
+      <StatLabel>{highestBidLabel}</StatLabel>
+      <StatNumber>{formattedHighestBid}</StatNumber>
+      <StatHelpText>{formattedHighestBidder}</StatHelpText>
+    </Stat>
+  );
+};
+
 const Auction = (props: AuctionProps) => {
   const {
-    token,
     auctionId,
     onAuctionEnded,
     ClaimTokenButton,
-    auctionableContract,
+    auctionableReader,
+    auctionableSigner,
     connectedAccountAddress,
   } = props;
 
@@ -42,60 +93,80 @@ const Auction = (props: AuctionProps) => {
     auctionId,
     onAuctionEnded,
     connectedAccountAddress,
-    auctionableContract,
+    auctionableReader,
+    auctionableSigner,
   });
 
   if (!auction) return <Spinner />;
 
   const isHighestBidder = auction.highestBidder === connectedAccountAddress;
-  const shouldDisplayWithdrawButton = auction.highestBidder !== connectedAccountAddress;
-  const shouldDisplayClaimButton = !isActive && connectedAccountAddress && isHighestBidder;
 
-  const highestBidderMessage = isHighestBidder ?
-    "You are the highest bidder!" :
-    auction.highestBidder === ethers.constants.AddressZero ?
-      `No bidders yet` :
-      `Highest bidder: ${auction.highestBidder}`;
+  const canWithdraw = !isHighestBidder && currentBid.gt(0);
 
   return (
-    <div className="flex flex-row">
-      <img
-        src={token.imageSource}
-        className="border border-indigo-600 h-80"
-      />
+    <Flex
+      h="100%"
+      w="100%"
+      direction={"column"}
+      borderWidth={"1px"}
+      borderRadius={5}
+    >
+      <Flex
+        mt={2}
+        wrap={"wrap"}
+        justify="space-around"
+        align={"space-around"}
+      >
+        <Box
+          flexBasis={"auto"}
+          textAlign="center"
+        >
+          <HighestBid
+            isActive={isActive}
+            highestBid={auction.highestBid}
+            highestBidder={auction.highestBidder}
+            connectedAccountAddress={connectedAccountAddress}
+          />
+        </Box>
+        <Box flexBasis={"auto"}>
+          <RemainingTime
+            auction={auction}
+            timeRemaining={timeRemaining}
+          />
+        </Box>
+      </Flex>
+
+      {(isActive || canWithdraw || isHighestBidder) && <Divider />}
+
       {isActive && (
-        <>
-          <div className="flex flex-wrap flex-col">
-            <div className="p-5">
-              {auction.highestBidder === ethers.constants.AddressZero ?
-                "Starting bid: " :
-                "Highest bid: "}{" "}
-              {amountInEthText(auction.highestBid)}
-            </div>
-            <div className="p-5">{highestBidderMessage}</div>
-            <BiddingForm
-              auction={auction}
-              currentBid={currentBid}
-              onAddToBid={onAddToBid}
-              onWithdrawBid={onWithdrawBid}
-              transactionPending={transactionPending}
-            />
-          </div>
-          <RemainingTime timeRemaining={timeRemaining} />
-        </>
+        <BiddingForm
+          auction={auction}
+          isActive={isActive}
+          currentBid={currentBid}
+          onAddToBid={onAddToBid}
+          onWithdrawBid={onWithdrawBid}
+          transactionPending={transactionPending}
+        />
       )}
-      {!isActive && (
-        <div className="flex flex-col p-10">
-          {shouldDisplayWithdrawButton && (
+
+      {!isActive && (canWithdraw || isHighestBidder) && (
+        <Flex
+          flexWrap="wrap"
+          justifyContent={"center"}
+          alignItems="center"
+          m={2}
+        >
+          {canWithdraw && (
             <WithdrawBidButton
-              onWithdrawBid={onWithdrawBid}
+              canWithdraw={canWithdraw}
               currentBid={currentBid}
+              onWithdrawBid={onWithdrawBid}
             />
           )}
-          {shouldDisplayClaimButton && <ClaimTokenButton />}
-        </div>
+          {isHighestBidder && <ClaimTokenButton />}
+        </Flex>
       )}
-    </div>
+    </Flex>
   );
 };
 
