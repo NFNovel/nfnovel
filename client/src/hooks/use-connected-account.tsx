@@ -6,6 +6,8 @@ import { ConnectedAccountContext } from "src/contexts/connected-account-context"
 
 import type { IConnectedAccountContext } from "src/contexts/connected-account-context";
 
+// TODO: ref to match formatting of buttons in Auction/BiddingForm
+// TODO: create a pre-style button for consistency or change global theme
 const ConnectAccountButtons = () => {
   const {
     error,
