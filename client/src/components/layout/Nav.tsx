@@ -161,6 +161,7 @@ const ConnectedAccountDetails = (props: {
       {connectedAccount.isPanelOwner && (
         <>
           <MenuDivider />
+          {/* TODO: add auth context and SIWE */}
           <MenuItem>Authenticate as Owner</MenuItem>
         </>
       )}
@@ -204,7 +205,7 @@ export default function Nav() {
         alignItems={"center"}
         justifyContent={"space-between"}
       >
-        <Box>LOGO PLACEHOLDER</Box>
+        <Box>LOGO</Box>
 
         <Flex alignItems={"center"}>
           <Stack

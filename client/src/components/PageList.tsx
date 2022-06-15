@@ -50,11 +50,6 @@ function PageList() {
             <Spinner />
           </Center>
         }
-        endMessage={
-          <Center>
-            You have reached the end of the released pages. Check back later!
-          </Center>
-        }
       >
         {pages.map((page: PageType, index: number) => (
           <Page
