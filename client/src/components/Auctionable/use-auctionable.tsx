@@ -9,12 +9,12 @@ import { useInterval } from "src/utils/use-timers";
 
 import { buildAuctionFilters } from "./utils";
 
-import type { ContractInterface } from "ethers";
 import type { Auction as AuctionType } from "src/types/auction";
 
 export interface IUseAuctionableConfig {
   auctionId: BigNumber | number;
-  auctionableContract: Auctionable;
+  auctionableReader: Auctionable;
+  auctionableSigner: Auctionable;
   connectedAccountAddress: string | undefined | null;
   onAuctionEnded?: (endedAuction: AuctionType) => void;
 }
@@ -23,13 +23,13 @@ export interface IUseAuctionable {
   currentBid: BigNumber;
   transactionPending: boolean;
   isActive: boolean | undefined;
-  timeRemaining: Duration | null;
+  timeRemaining: Duration;
   auction: AuctionType | undefined;
   onWithdrawBid: () => Promise<boolean>;
   onAddToBid: (amountInWei: BigNumber) => Promise<boolean>;
 }
 
-export const computeTimeRemaining = (auction: AuctionType) => {
+const computeTimeRemaining = (auction: AuctionType) => {
   const remainingTime = DateTime.fromSeconds(
     auction.endTime.toNumber(),
   ).diffNow(["seconds", "hours", "minutes"]);
@@ -37,25 +37,39 @@ export const computeTimeRemaining = (auction: AuctionType) => {
   return remainingTime.toMillis() <= 0 ? Duration.fromMillis(0) : remainingTime;
 };
 
+const computeTimeRemainingInterval = (auction: AuctionType) => {
+  const oneSecond = 1 * 1000;
+  const oneMinute = 60 * 1000;
+  const timeRemaining = computeTimeRemaining(auction).toMillis();
+
+  if (timeRemaining <= 0) return null;
+
+  // switch to 1 second intervals when under 2 mins remaining
+  return timeRemaining >= oneMinute * 2 ? oneMinute : oneSecond;
+};
+
 // THINK: add onWithdrawableBid hook (to indicate to user that they have a bid to withdraw)
 const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
   const {
     auctionId,
     onAuctionEnded,
-    auctionableContract,
+    auctionableReader,
+    auctionableSigner,
     connectedAccountAddress,
   } = config;
 
   /** WAGMI compatible Contract config for events */
   const auctionableContractConfig = {
-    addressOrName: auctionableContract.address,
-    contractInterface: auctionableContract.interface,
+    addressOrName: auctionableReader.address,
+    contractInterface: auctionableReader.interface,
   };
 
   const [isActive, setIsActive] = useState<boolean>();
   const [auction, setAuction] = useState<AuctionType>();
   const [transactionPending, setTransactionPending] = useState(false);
-  const [timeRemaining, setTimeRemaining] = useState<Duration | null>(null);
+  const [timeRemaining, setTimeRemaining] = useState<Duration>(
+    Duration.fromMillis(0),
+  );
   const [currentConnectedAccountBid, setCurrentConnectedAccountBid] = useState(
     BigNumber.from(0),
   );
@@ -65,11 +79,12 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
     () => {
       if (!auction) return;
 
-      const _timeRemaining = computeTimeRemaining(auction);
+      const timeRemaining = computeTimeRemaining(auction);
 
-      setTimeRemaining(_timeRemaining);
+      setTimeRemaining(timeRemaining);
     },
-    isActive ? 1000 : null,
+    // NOTE: variable interval - only go down to seconds when < 2 min
+    auction ? computeTimeRemainingInterval(auction) : null,
   );
 
   /**
@@ -78,7 +93,7 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
 
   useEffect(() => {
     const loadAuction = async () => {
-      const auction = await auctionableContract.auctions(auctionId);
+      const auction = await auctionableReader.auctions(auctionId);
       // only load the auction once, afterwards it will be kept in sync with event listeners
       setAuction(auction);
 
@@ -96,15 +111,16 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
         setTimeRemaining(remainingTime);
       } else {
         setIsActive(false);
+        onAuctionEnded && onAuctionEnded(auction);
       }
     };
 
-    if (!auction) loadAuction();
-  }, [auction, auctionableContract, auctionId, onAuctionEnded]);
+    loadAuction();
+  }, [auctionableReader, auctionId, onAuctionEnded]);
 
   useEffect(() => {
     const loadCurrentBid = async () => {
-      if (!auctionableContract.signer) {
+      if (!auctionableSigner.signer) {
         console.error(
           "auctionable contract does not have a signer to load their current bid",
         );
@@ -113,18 +129,18 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
       }
 
       setCurrentConnectedAccountBid(
-        await auctionableContract.checkBid(auctionId),
+        await auctionableSigner.checkBid(auctionId),
       );
     };
 
     loadCurrentBid();
     // NOTE: will reload currentBid if connectedAccountAddress changes (causing contract to update)
-  }, [auctionId, auctionableContract]);
+  }, [auctionId, auctionableSigner]);
 
   // NOTE: reset time remaining so it doesnt "jump" if unmounted
   useEffect(() => {
     return () => {
-      setTimeRemaining(null);
+      setTimeRemaining(Duration.fromMillis(0));
     };
   }, []);
 
@@ -136,10 +152,10 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
    * HANDLERS
    */
 
-  // THINK: ref to useAddToBid(auctionableContract, auctionId) => { addToBid: (amountInWei) => boolean, isWaitingForConfirmation, ... }
+  // THINK: ref to useAddToBid(auctionableSigner, auctionId) => { addToBid: (amountInWei) => boolean, isWaitingForConfirmation, ... }
   const handleAddToBid = useCallback(
     async (amountInWei: BigNumber) => {
-      if (!auctionableContract.signer) {
+      if (!auctionableSigner.signer) {
         console.error(
           "auctionable contract does not have a signer to add to their bid",
         );
@@ -149,7 +165,7 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
 
       try {
         setTransactionPending(true);
-        await auctionableContract.addToBid(auctionId, { value: amountInWei });
+        await auctionableSigner.addToBid(auctionId, { value: amountInWei });
 
         return true;
       } catch (error: any) {
@@ -163,11 +179,11 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
         setTransactionPending(false);
       }
     },
-    [auctionId, auctionableContract],
+    [auctionId, auctionableSigner],
   );
 
   const handleWithdrawBid = useCallback(async () => {
-    if (!auctionableContract.signer) {
+    if (!auctionableSigner.signer) {
       console.error(
         "auctionable contract does not have a signer to withdraw their bid",
       );
@@ -177,7 +193,7 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
 
     try {
       setTransactionPending(true);
-      await auctionableContract.withdrawBid(auctionId);
+      await auctionableSigner.withdrawBid(auctionId);
 
       return true;
     } catch (error: any) {
@@ -190,7 +206,7 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
     } finally {
       setTransactionPending(false);
     }
-  }, [auctionId, auctionableContract]);
+  }, [auctionId, auctionableSigner]);
 
   /**
    * END HANDLERS
@@ -204,7 +220,7 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
     filterAuctionEnded,
     filterAuctionBidRaised,
     filterAuctionBidWithdrawn,
-  } = buildAuctionFilters(auctionableContract, auctionId);
+  } = buildAuctionFilters(auctionableReader, auctionId);
 
   const handleAuctionEnded = useCallback(() => {
     const endedAuction = Object.assign({}, auction, { state: 2 });
