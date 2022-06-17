@@ -1,4 +1,4 @@
-import { useSigner } from "wagmi";
+import { useConnect, useSigner } from "wagmi";
 import {
   createContext,
   useState,
@@ -6,8 +6,10 @@ import {
   useEffect,
   useCallback,
 } from "react";
+import { Tag, Text } from "@chakra-ui/react";
 
 import PanelOwnerService from "src/services/panel-owner-service";
+import useToastMessage from "src/hooks/use-toast-message";
 
 import type { BigNumber, Signer } from "ethers";
 
@@ -34,6 +36,10 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
   const { children } = props;
 
   const { data: signer } = useSigner();
+
+  const { renderErrorToast, renderSuccessToast } = useToastMessage({});
+  const { status: walletStatus, activeConnector: activeWallet } = useConnect();
+
   const [connectedAccount, setConnectedAccount] = useState<IConnectedAccount | null>(null);
 
   // great tip to prevent needless re-rendering!
@@ -44,7 +50,7 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
   );
 
   const updateConnectedAccount = useCallback(async () => {
-    if (!signer) return;
+    if (!signer) return setConnectedAccount(null);
 
     const address = await signer.getAddress();
 
@@ -64,7 +70,39 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
 
   useEffect(() => {
     updateConnectedAccount();
-  }, [updateConnectedAccount]);
+  }, [updateConnectedAccount, connectedAccount?.signer]);
+
+  useEffect(() => {
+    if (connectedAccount?.address) {
+      if (walletStatus === "connected") {
+        renderSuccessToast(
+          `${activeWallet?.name} Wallet`,
+          <Text>
+            Connected as{" "}
+            <Tag
+              variant={"solid"}
+              color="black"
+            >
+              {connectedAccount.address.slice(0, 6)}...
+            </Tag>
+          </Text>,
+        );
+      }
+
+      if (walletStatus === "disconnected") {
+        renderErrorToast(
+          "Wallet Disconnected",
+          "Check your wallet, it may have become locked",
+        );
+      }
+    }
+  }, [
+    walletStatus,
+    activeWallet,
+    renderErrorToast,
+    renderSuccessToast,
+    connectedAccount,
+  ]);
 
   return (
     <ConnectedAccountContext.Provider
