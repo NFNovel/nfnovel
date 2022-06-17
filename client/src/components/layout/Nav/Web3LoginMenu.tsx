@@ -49,28 +49,28 @@ const UnsupportedNetworkMessage = (props: {
     <Text>
       Network{" "}
       <Tag
-        variant={"outline"}
+        variant={"solid"}
         color={"black"}
       >
         {activeChainName}
       </Tag>{" "}
       [
       <Tag
-        variant={"outline"}
+        variant={"solid"}
         color={"black"}
       >
         {activeChainId}
       </Tag>
       ] is not supported. Change networks with your wallet to{" "}
       <Tag
-        variant={"outline"}
+        variant={"solid"}
         color={"black"}
       >
         {networkName}
       </Tag>{" "}
       [
       <Tag
-        variant={"outline"}
+        variant={"solid"}
         color={"black"}
       >
         {networkId}
@@ -87,13 +87,17 @@ const ConnectedAccountDetails = (props: {
 
   const { network } = useProvider();
   const { activeChain } = useNetwork();
-  const { renderErrorToast } = useToastMessage({});
+  const { renderErrorToast, closeErrorToast } = useToastMessage({});
 
   const networkIsSupported = activeChain?.id === network.chainId;
   const truncatedAddress = `${connectedAccount.address.slice(0, 6)}...`;
 
   useEffect(() => {
-    if (!networkIsSupported && activeChain) {
+    if (!activeChain) return;
+
+    if (networkIsSupported) {
+      closeErrorToast();
+    } else {
       renderErrorToast(
         "Unsupported Network",
         <UnsupportedNetworkMessage
@@ -102,13 +106,25 @@ const ConnectedAccountDetails = (props: {
           activeChainId={activeChain.id}
           activeChainName={activeChain.name}
         />,
+        null,
       );
     }
-  }, [activeChain, network, networkIsSupported, renderErrorToast]);
+  }, [
+    activeChain,
+    network,
+    networkIsSupported,
+    renderErrorToast,
+    closeErrorToast,
+  ]);
 
   return (
     <Box>
       <TableContainer>
+        {!networkIsSupported && (
+          <Center my={2}>
+            <Badge colorScheme={"red"}>Unsupported</Badge>
+          </Center>
+        )}
         <Table
           size="sm"
           variant="unstyled"
@@ -133,18 +149,20 @@ const ConnectedAccountDetails = (props: {
               </Td>
             </Tr>
           </Tbody>
-          <TableCaption>
-            <Center>
-              Connected as: <Badge ml={2}>{truncatedAddress}</Badge>
-            </Center>
-          </TableCaption>
         </Table>
       </TableContainer>
 
       <MenuDivider />
+
+      <Center>
+        Connected as: <Badge ml={2}>{truncatedAddress}</Badge>
+      </Center>
+
+      <MenuDivider />
+
       <Stat textAlign={"center"}>
         <StatHelpText>
-          <Badge colorScheme={connectedAccount.isPanelOwner ? "green" : "red"}>
+          <Badge colorScheme={connectedAccount.isPanelOwner ? "green" : "gray"}>
             {connectedAccount.isPanelOwner ? "OWNER" : "NOT AN OWNER"}
           </Badge>
         </StatHelpText>

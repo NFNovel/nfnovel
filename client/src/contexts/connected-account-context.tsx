@@ -1,4 +1,4 @@
-import { useConnect, useSigner } from "wagmi";
+import { useConnect, useProvider, useSigner } from "wagmi";
 import {
   createContext,
   useState,
@@ -15,7 +15,7 @@ import type { BigNumber, Signer } from "ethers";
 
 export interface IConnectedAccount {
   address: string;
-  signer: Signer;
+  signer: Signer | null;
   isPanelOwner: boolean;
   ownedPanelTokenIds: (BigNumber | number)[];
 }
@@ -35,10 +35,11 @@ export const ConnectedAccountContext = createContext<IConnectedAccountContext>({
 const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
   const { children } = props;
 
-  const { data: signer } = useSigner();
+  const { data: activeSigner } = useSigner();
+  const { network: providerNetwork } = useProvider();
+  const { activeConnector: activeWallet } = useConnect();
 
-  const { renderErrorToast, renderSuccessToast } = useToastMessage({});
-  const { status: walletStatus, activeConnector: activeWallet } = useConnect();
+  const { renderSuccessToast } = useToastMessage({});
 
   const [connectedAccount, setConnectedAccount] = useState<IConnectedAccount | null>(null);
 
@@ -50,9 +51,14 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
   );
 
   const updateConnectedAccount = useCallback(async () => {
-    if (!signer) return setConnectedAccount(null);
+    if (!activeWallet) return setConnectedAccount(null);
 
-    const address = await signer.getAddress();
+    const address = await activeWallet.getAccount();
+
+    const activeWalletChainId = await activeWallet.getChainId();
+    const signer = activeWalletChainId === providerNetwork.chainId && activeSigner ?
+      activeSigner :
+      null;
 
     const ownedPanelTokenIds = await PanelOwnerService.getOwnedPanelTokenIds(
       address,
@@ -66,43 +72,25 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
     };
 
     setConnectedAccount(connectedAccount);
-  }, [signer]);
+
+    renderSuccessToast(
+      `${activeWallet?.name} Wallet`,
+      <Text>
+        Connected as{" "}
+        <Tag
+          variant={"solid"}
+          color="black"
+        >
+          {address.slice(0, 6)}...
+        </Tag>
+      </Text>,
+    );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [activeWallet, activeSigner, providerNetwork]);
 
   useEffect(() => {
     updateConnectedAccount();
-  }, [updateConnectedAccount, connectedAccount?.signer]);
-
-  useEffect(() => {
-    if (connectedAccount?.address) {
-      if (walletStatus === "connected") {
-        renderSuccessToast(
-          `${activeWallet?.name} Wallet`,
-          <Text>
-            Connected as{" "}
-            <Tag
-              variant={"solid"}
-              color="black"
-            >
-              {connectedAccount.address.slice(0, 6)}...
-            </Tag>
-          </Text>,
-        );
-      }
-
-      if (walletStatus === "disconnected") {
-        renderErrorToast(
-          "Wallet Disconnected",
-          "Check your wallet, it may have become locked",
-        );
-      }
-    }
-  }, [
-    walletStatus,
-    activeWallet,
-    renderErrorToast,
-    renderSuccessToast,
-    connectedAccount,
-  ]);
+  }, [updateConnectedAccount]);
 
   return (
     <ConnectedAccountContext.Provider

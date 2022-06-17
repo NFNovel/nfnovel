@@ -1,11 +1,11 @@
-import React from "react";
-import { Box, Container, Flex, VStack, Spacer } from "@chakra-ui/react";
+import React, { useMemo } from "react";
+import { Box, Flex, VStack, Spacer } from "@chakra-ui/react";
 
 import Panel from "../Panel";
 
-import type { IpfsPanelData } from "src/hooks/use-nfnovel-ipfs-data";
 import type { PanelProps } from "../Panel";
 import type { heightOrWidth, PageMetadata } from "src/types/page";
+import type { IpfsPanelData } from "src/hooks/use-nfnovel-ipfs-data";
 
 type PageLayoutProps = {
   pagePanelsData: IpfsPanelData[];
@@ -53,37 +53,45 @@ const PanelRow = (props: PanelRowProps) => {
 const PageLayout = (props: PageLayoutProps) => {
   const { pageMetadata, pagePanelsData } = props;
 
-  // NOTE: merges page metadata with panel data for rendering
-  const panelRowsWithMetadata = pageMetadata.panelRows.map(
-    (panelRow, index) => {
-      const panelColumnWithMetadata = panelRow.panelColumns.map(
-        (panelColumn) => {
-          const IpfsPanelData = pagePanelsData.find(
-            // compare as strings for matching
-            (IpfsPanelData) =>
-              IpfsPanelData.panelTokenId.toString() ===
-              panelColumn.panelTokenId.toString(),
-          );
-
-          if (!IpfsPanelData)
-            throw new Error(
-              `Panel data for panelTokenId [${panelColumn.panelTokenId}] not found`,
+  const panelRowsWithMetadata = useMemo(
+    () =>
+      // NOTE: merges page metadata with panel IPFS data for rendering
+      pageMetadata.panelRows.map((panelRow, index) => {
+        const panelColumnsWithMetadata = panelRow.panelColumns.map(
+          (panelColumn) => {
+            const IpfsPanelData = pagePanelsData.find(
+              // compare as strings for matching
+              (IpfsPanelData) =>
+                IpfsPanelData.panelTokenId.toString() ===
+                panelColumn.panelTokenId.toString(),
             );
 
-          return { ...panelColumn, ...IpfsPanelData };
-        },
-      );
+            if (!IpfsPanelData) {
+              throw new Error(
+                `Panel data for panelTokenId [${panelColumn.panelTokenId}] not found`,
+              );
+            }
 
-      return { ...panelRow, panelColumns: panelColumnWithMetadata, id: index };
-    },
+            return { ...panelColumn, ...IpfsPanelData };
+          },
+        );
+
+        return {
+          ...panelRow,
+          panelColumns: panelColumnsWithMetadata,
+          id: index,
+        };
+      }),
+    [pageMetadata.panelRows, pagePanelsData],
   );
 
   return (
-    <Container maxW={"container.md"}>
+    <Box maxW={{ base: "container.sm", lg: "container.md" }}>
       <VStack
-        spacing={SPACING}
+        my={"20px"}
         height="100%"
         width="100%"
+        spacing={SPACING}
       >
         {panelRowsWithMetadata.map((panelRowWithMetadata) => (
           <PanelRow
@@ -93,8 +101,7 @@ const PageLayout = (props: PageLayoutProps) => {
           />
         ))}
       </VStack>
-      <Spacer height={"10px"} />
-    </Container>
+    </Box>
   );
 };
 

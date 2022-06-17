@@ -5,7 +5,7 @@ type UseToastMessageOptions = Omit<UseToastOptions, "position" | "status">;
 
 export const useToastMessage = (options?: UseToastMessageOptions) => {
   const baseConfig: UseToastOptions = {
-    position: "bottom-right",
+    position: "bottom",
   };
 
   const errorToastRef = useRef<ToastId>();
@@ -45,6 +45,7 @@ export const useToastMessage = (options?: UseToastMessageOptions) => {
   const renderErrorToast = (
     title = "Error",
     description: string | JSX.Element | null = "Unknown error :(",
+    duration: number | null = 5000,
   ) => {
     if (
       // if not presented yet
@@ -53,8 +54,19 @@ export const useToastMessage = (options?: UseToastMessageOptions) => {
       // https://chakra-ui.com/docs/components/feedback/toast#preventing-duplicate-toast
       !errorToast.isActive(errorToastRef.current)
     ) {
-      errorToastRef.current = errorToast({ title, description });
+      errorToastRef.current = errorToast({
+        title,
+        duration,
+        description,
+        isClosable: true,
+      });
     }
+  };
+
+  const closeErrorToast = () => {
+    if (!errorToastRef.current) return;
+
+    errorToast.close(errorToastRef.current);
   };
 
   const renderLoadingToast = (
@@ -85,6 +97,7 @@ export const useToastMessage = (options?: UseToastMessageOptions) => {
   };
 
   return {
+    closeErrorToast,
     renderErrorToast,
     renderLoadingToast,
     renderSuccessToast,

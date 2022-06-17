@@ -1,0 +1,14 @@
+{
+  "pageNumber": 1,
+  "panelRows": [
+    {
+      "rowHeight": "100%",
+      "panelColumns": [
+        {
+          "panelTokenId": 1,
+          "columnWidth": "100%"
+        }
+      ]
+    }
+  ]
+}

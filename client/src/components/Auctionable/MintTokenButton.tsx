@@ -31,7 +31,12 @@ const MintTokenButton = (props: MintTokenButtonProps) => {
     renderLoadingToast,
     renderSuccessToast,
   } = useToastMessage();
-  const { connectedAccount, ConnectAccountButtons } = useConnectedAccount();
+
+  const {
+    hasSigner,
+    connectedAccount,
+    ConnectAccountButtons,
+  } = useConnectedAccount();
 
   const [mintedTokenId, setMintedTokenId] = useState<BigNumber>();
   const [transactionPending, setTransactionPending] = useState(false);
@@ -80,9 +85,9 @@ const MintTokenButton = (props: MintTokenButtonProps) => {
   return (
     <StyledButton
       onClick={handleMint}
-      disabled={!!mintedTokenId}
       isLoading={transactionPending}
       buttonText={buttonLabel || "Mint Token"}
+      disabled={!hasSigner || !!mintedTokenId}
     />
   );
 };
