@@ -18,10 +18,10 @@ export const addPages = async (
   console.log({ nfnovelContractAddress });
 
   const firstPageObscuredBaseURI =
-    "ipfs://QmP8mkq6qHV6QnkBx4CjmDGLUmNHv8D56PmAZRYctjQcmb";
+    "ipfs://QmULBYeAZA3jgyfUdSFtruMNbKg8gMNMx2meVFbvizKsek";
 
   const secondPageObscuredBaseURI =
-    "ipfs://QmY4oKsoD4V4uCeAg46rmVDdzGTTZq1sj7VMGSavnZWCqR";
+    "ipfs://QmSPavZPFqjErgKgp2wYGJp5ToU2isgKo4bFsBJwGVQkWZ";
 
   await contract.addPage(1, firstPageObscuredBaseURI);
   await contract.addPage(5, secondPageObscuredBaseURI);
