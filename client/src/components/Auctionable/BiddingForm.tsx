@@ -15,9 +15,10 @@ import {
   StatNumber,
 } from "@chakra-ui/react";
 import { BigNumber } from "ethers";
-import { useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import useConnectedAccount from "src/hooks/use-connected-account";
+import useToastMessage from "src/hooks/use-toast-message";
 
 import { convertToEth, convertToWei } from "./utils";
 
@@ -35,16 +36,28 @@ export const WithdrawBidButton = (props: {
     onWithdrawBid,
   } = props;
 
+  const {
+    renderErrorToast,
+    renderLoadingToast,
+    renderSuccessToast,
+  } = useToastMessage();
+
   const handleWithdrawBid = async () => {
-    const success = await onWithdrawBid();
-    /* TODO: use toaster */
+    renderLoadingToast(
+      "Transaction pending...",
+      "Withdraw submitted to the network",
+    );
+
+    const { success, error } = await onWithdrawBid();
+
+    if (success) renderSuccessToast("Withdraw successful!");
+    else renderErrorToast("Withdraw failed", error);
   };
 
-  const label = currentBid.isZero() ?
+  const buttonText = currentBid.isZero() ?
     "No bid to withdraw" :
     `Withdraw ${convertToEth(currentBid, true)}`;
 
-  // TODO: disable if highest bidder
   return (
     <Box>
       <Button
@@ -55,7 +68,7 @@ export const WithdrawBidButton = (props: {
         onClick={handleWithdrawBid}
         disabled={!canWithdraw}
       >
-        {label}
+        {buttonText}
       </Button>
     </Box>
   );
@@ -78,10 +91,21 @@ const BiddingForm = (props: {
     transactionPending,
   } = props;
 
+  const {
+    renderErrorToast,
+    renderLoadingToast,
+    renderSuccessToast,
+  } = useToastMessage();
+
   const { connectedAccount, ConnectAccountButtons } = useConnectedAccount();
 
   const [addToBidInWei, setAddToBidInWei] = useState<BigNumber>(
     auction.highestBid.add(auction.minimumBidIncrement),
+  );
+
+  const minimumAddToBidValue = useMemo(
+    () => auction.highestBid.add(auction.minimumBidIncrement).sub(currentBid),
+    [currentBid, auction.highestBid, auction.minimumBidIncrement],
   );
 
   const formatAddToBidValue = (
@@ -101,13 +125,26 @@ const BiddingForm = (props: {
     setAddToBidInWei(amountInWei);
   };
 
-  const handleAddToBid = async () => {
-    // TODO: return { success, error } or dont catch and use try/catch in here
-    // TODO: use toaster to indicate success/failure
-    const success = await onAddToBid(addToBidInWei);
+  const handleAddToBid = useCallback(async () => {
+    renderLoadingToast(
+      "Transaction pending...",
+      "Bid increment submitted to the network",
+    );
 
-    // indicate success/failure
-  };
+    const { success, error } = await onAddToBid(addToBidInWei);
+    setAddToBidInWei(minimumAddToBidValue);
+
+    if (success) renderSuccessToast("Bid increment successful!");
+    else renderErrorToast("Bid increment failed", error);
+  }, [
+    onAddToBid,
+    addToBidInWei,
+    setAddToBidInWei,
+    minimumAddToBidValue,
+    renderErrorToast,
+    renderLoadingToast,
+    renderSuccessToast,
+  ]);
 
   if (!connectedAccount) {
     return <ConnectAccountButtons />;
@@ -117,7 +154,7 @@ const BiddingForm = (props: {
     currentBid.add(addToBidInWei) :
     addToBidInWei;
 
-  const notEnoughForBidding = currentBid && totalBidInWei?.lte(auction.highestBid);
+  const canAddToBid = totalBidInWei.gte(minimumAddToBidValue);
 
   const isHighestBidder = auction.highestBidder === connectedAccount.address;
 
@@ -126,10 +163,6 @@ const BiddingForm = (props: {
   const bidStepSize = auction.minimumBidIncrement.eq(0) ?
     convertToWei("0.01") :
     auction.minimumBidIncrement;
-
-  const minimumAddToBidValue = auction.highestBid
-    .add(auction.minimumBidIncrement)
-    .sub(currentBid);
 
   return (
     <Box
@@ -194,7 +227,7 @@ const BiddingForm = (props: {
             size={"lg"}
             variant={"outline"}
             flexBasis={"auto"}
-            disabled={!isActive || notEnoughForBidding}
+            disabled={!isActive || !canAddToBid}
             onClick={handleAddToBid}
           >
             Add to Bid

@@ -2,7 +2,7 @@ import { IPFS } from "ipfs-core";
 import { create as createIpfsNode } from "ipfs-core";
 import React, { createContext, useEffect, useState } from "react";
 
-import useErrorToast from "src/hooks/use-error-toast";
+import useToastMessage from "src/hooks/use-toast-message";
 
 import type { IDResult } from "ipfs-core-types/src/root";
 
@@ -21,7 +21,7 @@ export const ipfsContext = createContext<IpfsContext>({
 const IPFSProvider = (props: { children: React.ReactNode }) => {
   const { children } = props;
 
-  const { renderErrorToast } = useErrorToast({ duration: null });
+  const { renderErrorToast } = useToastMessage({ duration: null });
 
   const [ipfsNode, setIpfsNode] = useState<IPFS | null>(null);
   const [ipfsNodeDetails, setIpfsNodeDetails] = useState<IDResult | null>(null);
@@ -31,7 +31,10 @@ const IPFSProvider = (props: { children: React.ReactNode }) => {
 
   useEffect(() => {
     if (ipfsStatus === "error") {
-      renderErrorToast("Unable to connect to IPFS (try refreshing)");
+      renderErrorToast(
+        "IPFS Error",
+        "Unable to connect to IPFS (try refreshing)",
+      );
     }
   }, [ipfsStatus, renderErrorToast]);
 
