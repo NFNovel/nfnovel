@@ -7,8 +7,6 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 
-import NFNovelDeployment from "./deployments/NFNovel.json";
-
 dotenv.config();
 
 // This is a sample Hardhat task. To learn how to create your own go to
@@ -25,6 +23,15 @@ task("revealPage", "Reveals the page")
   .addParam<number>("page", "the page number to reveal")
   .setAction(async (taskArgs: { page: number }, hre) => {
     const pageNumber = taskArgs.page;
+
+    // eslint-disable-next-line @typescript-eslint/no-var-requires
+    let NFNovelDeployment;
+    try {
+      NFNovelDeployment = require("./deployments/NFNovel.json");
+    } catch (error) {
+      console.error("No deployment found");
+      process.exit(1);
+    }
 
     const nfnovel = await hre.ethers.getContractAt(
       "NFNovel",
