@@ -7,7 +7,7 @@ import type { Auctionable } from "@evm/types/Auctionable";
 
 import { useInterval } from "src/utils/use-timers";
 
-import { buildAuctionFilters } from "./utils";
+import { buildAuctionFilters, extractCustomEVMError } from "./utils";
 
 import type { Auction as AuctionType } from "src/types/auction";
 
@@ -19,14 +19,19 @@ export interface IUseAuctionableConfig {
   onAuctionEnded?: (endedAuction: AuctionType) => void;
 }
 
+export type TransactionRequestResult = {
+  success: boolean;
+  error: string | null;
+};
+
 export interface IUseAuctionable {
   currentBid: BigNumber;
   transactionPending: boolean;
   isActive: boolean | undefined;
   timeRemaining: Duration;
   auction: AuctionType | undefined;
-  onWithdrawBid: () => Promise<boolean>;
-  onAddToBid: (amountInWei: BigNumber) => Promise<boolean>;
+  onWithdrawBid: () => Promise<TransactionRequestResult>;
+  onAddToBid: (amountInWei: BigNumber) => Promise<TransactionRequestResult>;
 }
 
 const computeTimeRemaining = (auction: AuctionType) => {
@@ -152,7 +157,6 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
    * HANDLERS
    */
 
-  // THINK: ref to useAddToBid(auctionableSigner, auctionId) => { addToBid: (amountInWei) => boolean, isWaitingForConfirmation, ... }
   const handleAddToBid = useCallback(
     async (amountInWei: BigNumber) => {
       if (!auctionableSigner.signer) {
@@ -160,21 +164,23 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
           "auctionable contract does not have a signer to add to their bid",
         );
 
-        return false;
+        return { success: false, error: "Account not connected" };
       }
 
       try {
         setTransactionPending(true);
         await auctionableSigner.addToBid(auctionId, { value: amountInWei });
 
-        return true;
+        return { success: true, error: null };
       } catch (error: any) {
+        const customError = extractCustomEVMError(error);
+
         console.error("addToBid failed", {
           auctionId,
-          error: error,
+          error: customError || error,
         });
 
-        return false;
+        return { success: false, error: customError || "Unknown error" };
       } finally {
         setTransactionPending(false);
       }
@@ -188,21 +194,23 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
         "auctionable contract does not have a signer to withdraw their bid",
       );
 
-      return false;
+      return { success: false, error: "Account not connected" };
     }
 
     try {
       setTransactionPending(true);
       await auctionableSigner.withdrawBid(auctionId);
 
-      return true;
+      return { success: true, error: null };
     } catch (error: any) {
+      const customError = extractCustomEVMError(error);
+
       console.error("withdrawBid failed", {
         auctionId,
-        error: error,
+        error: customError || error,
       });
 
-      return false;
+      return { success: false, error: customError || "Unknown error" };
     } finally {
       setTransactionPending(false);
     }
@@ -248,12 +256,6 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
       if (connectedAccountAddress === highestBidder) {
         setCurrentConnectedAccountBid(highestBid as BigNumber);
       }
-
-      console.log("auction bid raised", {
-        auctionId,
-        highestBidder,
-        highestBid,
-      });
 
       setAuction((currentAuction) =>
         Object.assign({}, currentAuction, { highestBid, highestBidder }),
