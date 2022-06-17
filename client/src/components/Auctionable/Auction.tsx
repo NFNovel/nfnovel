@@ -56,7 +56,7 @@ const HighestBid = (props: {
       "You won the auction!";
   } else {
     formattedHighestBidder = `${
-      isActive ? "Winning" : "Highest"
+      isActive ? "Highest" : "Winning"
     } bidder: ${highestBidder.slice(0, 6)}`;
   }
 

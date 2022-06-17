@@ -1,12 +1,5 @@
 import { BigNumber } from "ethers";
-import {
-  Box,
-  Image,
-  Spinner,
-  useDisclosure,
-  Collapse,
-  Button,
-} from "@chakra-ui/react";
+import { Box, Image, Spinner, useDisclosure, Collapse } from "@chakra-ui/react";
 import { useCallback, useEffect, useState } from "react";
 
 import useNFNovel from "src/hooks/use-nfnovel";
@@ -14,6 +7,7 @@ import useConnectedAccount from "src/hooks/use-connected-account";
 
 import AuctionManager from "./Auctionable/Auction";
 import MintTokenButton from "./Auctionable/MintTokenButton";
+import StyledButton from "./StyledButton";
 
 import type { PanelColumn } from "src/types/page";
 import type { IpfsPanelData } from "src/hooks/use-nfnovel-ipfs-data";
@@ -21,7 +15,6 @@ import type { IpfsPanelData } from "src/hooks/use-nfnovel-ipfs-data";
 export type PanelProps = IpfsPanelData & Omit<PanelColumn, "panelTokenId">;
 
 // TODO: use description to give summary of panel scene on hover
-// THINK: ability to magnify image (once sold, instead of auction)
 const Panel = (props: PanelProps) => {
   const {
     metadata,
@@ -59,7 +52,8 @@ const Panel = (props: PanelProps) => {
     };
 
     checkIfPanelIsSold();
-  }, [panelTokenId, isPanelSold]);
+    // NOTE: check again if the connected account becomes a panel owner
+  }, [panelTokenId, isPanelSold, connectedAccount?.isPanelOwner]);
 
   const handleMintPanel = useCallback(async () => {
     try {
@@ -113,14 +107,10 @@ const Panel = (props: PanelProps) => {
             ClaimTokenButton={() =>
               panelIsSold ? (
                 // THINK: this is a weird way of handling this..
-                <Button
-                  variant={"outline"}
-                  size={"lg"}
-                  m={2}
+                <StyledButton
                   disabled={true}
-                >
-                  Already Minted!
-                </Button>
+                  buttonText={"Already Minted!"}
+                />
               ) : (
                 <MintTokenButton
                   buttonLabel="Mint Panel!"
