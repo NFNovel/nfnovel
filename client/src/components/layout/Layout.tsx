@@ -1,7 +1,7 @@
 import React from "react";
 import { Box } from "@chakra-ui/react";
 
-import Nav from "./Nav";
+import Nav from "./Nav/Nav";
 
 type LayoutProps = {
   children: React.ReactNode;
