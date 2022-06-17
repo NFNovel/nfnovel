@@ -133,9 +133,12 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
         return;
       }
 
-      setCurrentConnectedAccountBid(
-        await auctionableSigner.checkBid(auctionId),
-      );
+      try {
+        const currentBid = await auctionableSigner.checkBid(auctionId);
+        setCurrentConnectedAccountBid(currentBid);
+      } catch (error) {
+        console.error("failed to load current bid", error);
+      }
     };
 
     loadCurrentBid();
