@@ -83,13 +83,21 @@ const ConnectAccountButtons = () => {
 };
 
 const useConnectedAccount = (): IConnectedAccountContext & {
+  hasSigner: boolean;
   ConnectAccountButtons: () => JSX.Element;
 } => {
   const { connectedAccount, updateConnectedAccount } = useContext(
     ConnectedAccountContext,
   );
 
-  return { connectedAccount, updateConnectedAccount, ConnectAccountButtons };
+  const hasSigner = !!connectedAccount?.signer;
+
+  return {
+    hasSigner,
+    connectedAccount,
+    updateConnectedAccount,
+    ConnectAccountButtons,
+  };
 };
 
 export default useConnectedAccount;
