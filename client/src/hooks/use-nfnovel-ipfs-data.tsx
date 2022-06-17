@@ -68,11 +68,16 @@ const useNFNovelIpfsData = () => {
 
   const cachedTokenURIs = useMemo(() => new Map<BigNumberish, string>(), []);
 
-  const getPageMetadata = useCallback(async (page: PageType) => {
-    const pageNumber = page.pageNumber.toString();
+  const getPageMetadata = useCallback(
+    async (page: PageType): Promise<PageMetadata | null> => {
+      const pageMetadataURI = `${page.baseURI}/metadata`;
 
-    return mockPageMetadata[pageNumber];
-  }, []);
+      const pageMetadata = await loadJSON(pageMetadataURI as ipfsURI);
+
+      return pageMetadata as PageMetadata;
+    },
+    [loadJSON],
+  );
 
   const getPagePanelsData = useCallback(
     async (page: PageType): Promise<IpfsPanelData[]> => {
