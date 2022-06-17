@@ -1,71 +1,95 @@
 import { useConnect } from "wagmi";
 import { useContext } from "react";
-import { ButtonGroup, Button } from "@blueprintjs/core";
-import { ConnectedAccountContext } from "src/contexts/connected-account-context";
+import { Flex, Icon, Center } from "@chakra-ui/react";
+import { FaChrome, FaFirefox } from "react-icons/fa";
 
-import type { IConnectedAccount } from "src/contexts/connected-account-context";
+import { ConnectedAccountContext } from "src/contexts/connected-account-context";
+import StyledButton from "src/components/StyledButton";
+
+import type { IConnectedAccountContext } from "src/contexts/connected-account-context";
 
 const ConnectAccountButtons = () => {
   const {
-    error,
     connect,
     connectors,
     isConnecting,
-    pendingConnector
+    pendingConnector,
   } = useConnect();
 
   if (!window.ethereum)
     return (
-      <ButtonGroup>
-        <Button>
+      <Flex
+        mt={2}
+        maxW={"100vw"}
+        flexWrap="wrap"
+        alignItems="center"
+        justifyContent="center"
+        textAlign={"center"}
+      >
+        <StyledButton>
           <a
             href="https://chrome.google.com/webstore/detail/metamask/nkbihfbeogaeaoehlefnkodbefgpgknn"
             target="_blank"
             rel="noreferrer noopener"
           >
-            Install Metamask (Chrome)
+            Install Metamask{" "}
+            <Center>
+              <Icon as={FaChrome} />
+            </Center>
           </a>
-        </Button>
-        <Button>
+        </StyledButton>
+        <StyledButton>
           <a
             href="https://addons.mozilla.org/en-US/firefox/addon/ether-metamask/"
             target="_blank"
             rel="noreferrer noopener"
           >
-            Install Metamask (Firefox)
+            Install Metamask{" "}
+            <Center>
+              <Icon as={FaFirefox} />
+            </Center>
           </a>
-        </Button>
-      </ButtonGroup>
+        </StyledButton>
+      </Flex>
     );
 
   return (
-    <ButtonGroup>
-      {connectors.map((connector) => (
-        <Button
-          disabled={!connector.ready}
-          key={connector.id}
-          onClick={() => connect(connector)}
-        >
-          Connect with {connector.name}
-          {!connector.ready && " (unsupported)"}
-          {isConnecting &&
-            connector.id === pendingConnector?.id &&
-            " (connecting)"}
-        </Button>
-      ))}
-
-      {error && <div>{error.message}</div>}
-    </ButtonGroup>
+    <Flex
+      mt={2}
+      maxW={"100vw"}
+      flexWrap="wrap"
+      alignItems="center"
+      justifyContent="center"
+      textAlign={"center"}
+    >
+      <Center>
+        {connectors.map((connector) =>
+          connector.ready ? (
+            <StyledButton
+              disabled={
+                !connector.ready ||
+                (isConnecting && connector.id === pendingConnector?.id)
+              }
+              key={connector.id}
+              onClick={() => connect(connector)}
+              isLoading={isConnecting && connector.id === pendingConnector?.id}
+              buttonText={`Connect with ${connector.name}`}
+            />
+          ) : null,
+        )}
+      </Center>
+    </Flex>
   );
 };
 
-const useConnectedAccount = (): {
-  connectedAccount: IConnectedAccount | null;
+const useConnectedAccount = (): IConnectedAccountContext & {
   ConnectAccountButtons: () => JSX.Element;
 } => {
-  const { connectedAccount } = useContext(ConnectedAccountContext);
+  const { connectedAccount, updateConnectedAccount } = useContext(
+    ConnectedAccountContext,
+  );
 
-  return { connectedAccount, ConnectAccountButtons };
+  return { connectedAccount, updateConnectedAccount, ConnectAccountButtons };
 };
 
 export default useConnectedAccount;

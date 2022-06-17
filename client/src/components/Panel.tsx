@@ -1,53 +1,64 @@
+import { BigNumber } from "ethers";
+import { Box, Image, Spinner, useDisclosure, Collapse } from "@chakra-ui/react";
 import { useCallback, useEffect, useState } from "react";
-import { Button, Drawer, Position, Spinner } from "@blueprintjs/core";
+
 import useNFNovel from "src/hooks/use-nfnovel";
 import useConnectedAccount from "src/hooks/use-connected-account";
-import { BigNumber } from "ethers";
 
 import AuctionManager from "./Auctionable/Auction";
 import MintTokenButton from "./Auctionable/MintTokenButton";
+import StyledButton from "./StyledButton";
 
-import type { PanelData } from "src/contexts/panel-context";
+import type { PanelColumn } from "src/types/page";
+import type { IpfsPanelData } from "src/hooks/use-nfnovel-ipfs-data";
 
-type PanelProps = {
-  panelData: PanelData;
-};
+export type PanelProps = IpfsPanelData & Omit<PanelColumn, "panelTokenId">;
 
+// TODO: use description to give summary of panel scene on hover
 const Panel = (props: PanelProps) => {
   const {
     metadata,
     imageSource,
-    panelTokenId
-  } = props.panelData;
+    columnWidth,
+    panelTokenId,
+  } = props;
 
-  const { nfnovel } = useNFNovel();
-  const { connectedAccount } = useConnectedAccount();
+  const { connectedAccount, updateConnectedAccount } = useConnectedAccount();
+  const {
+    nfnovelSigner,
+    nfnovelReader,
+    isPanelSold,
+    getPanelAuctionId,
+  } = useNFNovel();
+  const { isOpen, onToggle } = useDisclosure();
 
-  const [auctionIsOpen, setAuctionIsOpen] = useState<boolean>(false);
-
+  const [panelIsSold, setPanelIsSold] = useState(false);
   const [panelAuctionId, setPanelAuctionId] = useState<BigNumber>();
 
   useEffect(() => {
     const loadPanelAuctionId = async () => {
-      setPanelAuctionId(await nfnovel.getPanelAuctionId(panelTokenId));
+      setPanelAuctionId(await getPanelAuctionId(panelTokenId));
     };
 
     if (!panelAuctionId) loadPanelAuctionId();
-  }, [panelTokenId, panelAuctionId, nfnovel]);
+  }, [panelTokenId, panelAuctionId, getPanelAuctionId]);
 
-  const openAuctionModal = useCallback(
-    () => !auctionIsOpen && setAuctionIsOpen(true),
-    [auctionIsOpen],
-  );
+  useEffect(() => {
+    const checkIfPanelIsSold = async () => {
+      if (!panelTokenId) return;
 
-  const closeAuctionModal = useCallback(
-    () => auctionIsOpen && setAuctionIsOpen(false),
-    [auctionIsOpen],
-  );
+      const isSold = await isPanelSold(panelTokenId);
+      setPanelIsSold(isSold);
+    };
+
+    checkIfPanelIsSold();
+    // NOTE: check again if the connected account becomes a panel owner
+  }, [panelTokenId, isPanelSold, connectedAccount?.isPanelOwner]);
 
   const handleMintPanel = useCallback(async () => {
     try {
-      await nfnovel.mintPanel(panelTokenId);
+      await nfnovelSigner.mintPanel(panelTokenId);
+      await updateConnectedAccount();
 
       return true;
     } catch (error: any) {
@@ -58,54 +69,60 @@ const Panel = (props: PanelProps) => {
 
       return false;
     }
-  }, [nfnovel, panelTokenId]);
+  }, [nfnovelSigner, panelTokenId, updateConnectedAccount]);
 
   if (!imageSource || !metadata) return null;
 
   if (!panelAuctionId) return <Spinner />;
 
   return (
-    <article className="max-w-md mx-auto mt-4 bg-blue-800 shadow-lg border rounded-md duration-300 hover:shadow-sm">
-      <div className="filter opacity-100 hover:opacity-50 hover:red-500 duration-1000">
-        <Button onClick={openAuctionModal}>
-          <img
-            src={imageSource}
-            className="w-full h-48 rounded-t-md"
-          />
-        </Button>
-        <Drawer
-          isOpen={auctionIsOpen}
-          title="Place your Bid for this Panel"
-          icon="info-sign"
-          position={Position.BOTTOM}
-          canEscapeKeyClose={true}
-          canOutsideClickClose={true}
-          enforceFocus={true}
-          autoFocus={true}
-          onClose={closeAuctionModal}
-          usePortal={true}
-          hasBackdrop={true}
+    <Box
+      height={"100%"}
+      flex={columnWidth}
+    >
+      <Image
+        src={imageSource}
+        cursor={"pointer"}
+        onClick={onToggle}
+        alt={metadata?.description}
+      />
+      <Box
+        height={"100%"}
+        width={"100%"}
+      >
+        <Collapse
+          in={isOpen}
+          unmountOnExit
         >
           <AuctionManager
             auctionId={panelAuctionId}
-            auctionableContract={nfnovel}
+            auctionableReader={nfnovelReader}
+            auctionableSigner={nfnovelSigner}
             connectedAccountAddress={connectedAccount?.address}
             token={{
               metadata,
               imageSource,
               tokenId: panelTokenId,
             }}
-            ClaimTokenButton={() => (
-              <MintTokenButton
-                buttonLabel="Mint Panel!"
-                onMint={handleMintPanel}
-                erc721Contract={nfnovel}
-              />
-            )}
+            ClaimTokenButton={() =>
+              panelIsSold ? (
+                // THINK: this is a weird way of handling this..
+                <StyledButton
+                  disabled={true}
+                  buttonText={"Already Minted!"}
+                />
+              ) : (
+                <MintTokenButton
+                  buttonLabel="Mint Panel!"
+                  onMint={handleMintPanel}
+                  erc721Contract={nfnovelSigner}
+                />
+              )
+            }
           />
-        </Drawer>
-      </div>
-    </article>
+        </Collapse>
+      </Box>
+    </Box>
   );
 };
 

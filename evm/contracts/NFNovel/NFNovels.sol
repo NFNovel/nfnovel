@@ -14,11 +14,7 @@ contract NFNovels is Ownable {
     Counters.Counter private _novelIds;
     mapping(uint256 => address) public novelAddresses;
 
-    event NovelCreated(
-        address novelContract,
-        string novelTitle,
-        string novelSymbol
-    );
+    event NovelCreated(uint256 indexed novelId, address indexed novelContract);
 
     function createNovel(string memory novelTitle)
         public
@@ -34,7 +30,7 @@ contract NFNovels is Ownable {
 
         novelAddresses[novelId] = novelContract = address(novel);
 
-        emit NovelCreated(novelContract, novelTitle, novel.symbol());
+        emit NovelCreated(novelId, novelContract);
     }
 
     function _generateNovelSymbol(uint256 novelId)

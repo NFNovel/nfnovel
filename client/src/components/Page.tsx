@@ -1,82 +1,51 @@
-/* eslint-disable @next/next/no-img-element */
-import { Spinner } from "@blueprintjs/core";
-import { useContext, useEffect, useState } from "react";
-import { PanelData, PanelContext } from "src/contexts/panel-context";
-import useNFNovel from "src/hooks/use-nfnovel";
+import { useEffect, useState } from "react";
 
-import Panel from "./Panel";
+import useNFNovelIpfsData from "src/hooks/use-nfnovel-ipfs-data";
+import { Page as PageType, PageMetadata } from "src/types/page";
 
-import type { Page as PageType } from "src/types/page";
+import PageLayout from "./layout/PageLayout";
 
-function Page(props: { pageData: PageType }) {
-  const pageData = props.pageData;
+import type { IpfsPanelData } from "src/hooks/use-nfnovel-ipfs-data";
 
-  const parsedPageData = {
-    isRevealed: pageData.isRevealed,
-    baseURI: pageData.baseURI,
-    pageNumber: pageData.pageNumber.toNumber(),
-    panelTokenIds: pageData.panelTokenIds,
-  };
+function Page(props: { page: PageType }) {
+  const { page } = props;
 
-  /**
-   * TODO:
-   *
-   * 1. use the PanelContext (see pages/Test.tsx for example)
-   * 2. store the pagePanelsData as state
-   * 3. use getPagePanelsData and then store the result in pagePanelsData state
-   * (if no pagePanelsData show a <Spinner>)
-   * 4. map over the pagePanelsData and render a <Panel data={panelData} /> for each one
-   *
-   * Panel is a new component (create in components/Panel.tsx then import here)
-   * - props: { data: PanelData }
-   * - it should render an <img src={data.imageSource} /> IF imageSource is not null
-   *
-   * discuss remaining steps
-   */
-  const { nfnovel } = useNFNovel();
-
-  const panelContext = useContext(PanelContext);
-
-  const [pagePanelsData, setpagePanelsData] = useState<PanelData[] | null>(
+  const {
+    ipfsStatus,
+    getPageMetadata,
+    getPagePanelsData,
+  } = useNFNovelIpfsData();
+  const [pageMetadata, setPageMetadata] = useState<PageMetadata | null>(null);
+  const [pagePanelsData, setpagePanelsData] = useState<IpfsPanelData[] | null>(
     null,
   );
 
   useEffect(() => {
-    // define a function that will call getPagePanelsData
-    async function loadPanelsData() {
-      if (!panelContext) return;
+    const loadPanelsData = async () => {
+      if (ipfsStatus !== "connected" || !page) return;
 
-      const { getPagePanelsData } = panelContext;
-
-      const panelsData = await getPagePanelsData(pageData);
+      const panelsData = await getPagePanelsData(page);
       setpagePanelsData(panelsData);
-    }
+    };
 
-    // call this function after defining it
+    const loadPageMetadata = async () => {
+      if (ipfsStatus !== "connected" || !page) return;
+
+      const pageMetadata = await getPageMetadata(page);
+      setPageMetadata(pageMetadata);
+    };
+
+    loadPageMetadata();
     loadPanelsData();
-  }, [pageData, panelContext]);
+  }, [ipfsStatus, page, getPageMetadata, getPagePanelsData]);
 
-  if (!nfnovel || !panelContext || !pagePanelsData) return <Spinner />;
+  if (!pagePanelsData?.length || !pageMetadata) return null;
 
   return (
-    <section className="mt-12 relative overflow-hidden py-12 px-4 border border-gray-900 sm:px-8">
-      <div className="text-right mb-10 text-2xl">
-        {parsedPageData.isRevealed == false ?
-          "Active Auction" :
-          "Auction Ended"}
-      </div>
-      <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
-        {pagePanelsData.map((panelData, key) => (
-          <Panel
-            panelData={panelData}
-            key={`page-${pageData.pageNumber.toNumber()}-panel-${key}`}
-          />
-        ))}
-      </div>
-      <div className={"flex justify-center mt-10 text-3xl"}>
-        Page: {parsedPageData.pageNumber}
-      </div>
-    </section>
+    <PageLayout
+      pageMetadata={pageMetadata}
+      pagePanelsData={pagePanelsData}
+    />
   );
 }
 

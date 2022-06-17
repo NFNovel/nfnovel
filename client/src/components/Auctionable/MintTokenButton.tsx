@@ -1,16 +1,21 @@
-import { Button } from "@blueprintjs/core";
+import { Button, Spinner } from "@chakra-ui/react";
 import { useCallback, useState } from "react";
-import useConnectedAccount from "src/hooks/use-connected-account";
 import { useContractEvent } from "wagmi";
 
-import type { BigNumber } from "ethers";
 import type { ERC721 } from "@evm/types/ERC721";
 
+import useConnectedAccount from "src/hooks/use-connected-account";
+import useToastMessage from "src/hooks/use-toast-message";
+
+import StyledButton from "../StyledButton";
+
+import type { BigNumber } from "ethers";
+
 type MintTokenButtonProps = {
+  buttonLabel?: string;
   erc721Contract: ERC721;
   onMint: () => Promise<boolean>;
   onTransfer?: (tokenId: BigNumber) => void | Promise<void>;
-  buttonLabel?: string;
 };
 
 const MintTokenButton = (props: MintTokenButtonProps) => {
@@ -18,12 +23,16 @@ const MintTokenButton = (props: MintTokenButtonProps) => {
     onMint,
     onTransfer,
     buttonLabel,
-    erc721Contract
+    erc721Contract,
   } = props;
 
+  const {
+    renderErrorToast,
+    renderLoadingToast,
+    renderSuccessToast,
+  } = useToastMessage();
   const { connectedAccount, ConnectAccountButtons } = useConnectedAccount();
 
-  const [mintError, setMintError] = useState("");
   const [mintedTokenId, setMintedTokenId] = useState<BigNumber>();
   const [transactionPending, setTransactionPending] = useState(false);
 
@@ -52,10 +61,12 @@ const MintTokenButton = (props: MintTokenButtonProps) => {
   const handleMint = async () => {
     try {
       setTransactionPending(true);
+      renderLoadingToast("Mint Transaction", "Waiting on confirmation...");
       await onMint();
+      renderSuccessToast("Mint succesful!");
     } catch (error: any) {
       console.error("error minting token", error);
-      setMintError(error.message);
+      renderErrorToast("Minting error", "Minting panel failed");
     } finally {
       setTransactionPending(false);
     }
@@ -66,13 +77,12 @@ const MintTokenButton = (props: MintTokenButtonProps) => {
   if (mintedTokenId)
     return <div>Successfully minted token {mintedTokenId.toString()}!</div>;
 
-  if (mintError) return <div>{mintError}</div>;
-
   return (
-    <Button
+    <StyledButton
       onClick={handleMint}
-      loading={transactionPending}
-      text={buttonLabel || "Mint Token"}
+      disabled={!!mintedTokenId}
+      isLoading={transactionPending}
+      buttonText={buttonLabel || "Mint Token"}
     />
   );
 };

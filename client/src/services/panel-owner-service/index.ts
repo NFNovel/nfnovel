@@ -6,10 +6,6 @@ import type { BigNumber } from "ethers";
 import type { PanelMetadata } from "src/types/token";
 
 export interface IPanelOwnerService {
-  isPanelSold: (
-    nfnovel: NFNovel,
-    panelTokenId: BigNumber | number,
-  ) => Promise<boolean>;
   getOwnedPanelTokenIds: (
     ownerAddress: string,
   ) => Promise<(BigNumber | number)[]>;
@@ -30,16 +26,6 @@ export const createPanelOwnerService = (
   });
 
   const PanelOwnerService: IPanelOwnerService = {
-    isPanelSold: async (nfnovel, panelTokenId) => {
-      try {
-        await nfnovel.ownerOf(panelTokenId);
-
-        return true;
-      } catch {
-        return false;
-      }
-    },
-
     getOwnedPanelTokenIds: async (ownerAddress) => {
       const { data } = await apiRequest.get(
         `/api/panels/${ownerAddress}/owned`,

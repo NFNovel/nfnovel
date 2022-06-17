@@ -1,46 +1,82 @@
-import { Button, NumericInput } from "@blueprintjs/core";
-import { BigNumber, ethers } from "ethers";
-import { useState } from "react";
-import useConnectedAccount from "src/hooks/use-connected-account";
+import {
+  Box,
+  Button,
+  Center,
+  Divider,
+  Flex,
+  NumberDecrementStepper,
+  NumberIncrementStepper,
+  NumberInput,
+  NumberInputField,
+  NumberInputStepper,
+  Spacer,
+  Stat,
+  StatLabel,
+  StatNumber,
+} from "@chakra-ui/react";
+import { BigNumber } from "ethers";
+import { useCallback, useMemo, useState } from "react";
 
-import { amountInEthText } from "./utils";
+import useConnectedAccount from "src/hooks/use-connected-account";
+import useToastMessage from "src/hooks/use-toast-message";
+
+import { convertToEth, convertToWei } from "./utils";
 
 import type { Auction as AuctionType } from "src/types/auction";
 import type { IUseAuctionable } from "./use-auctionable";
 
 export const WithdrawBidButton = (props: {
   currentBid: BigNumber;
+  canWithdraw: boolean;
   onWithdrawBid: IUseAuctionable["onWithdrawBid"];
 }) => {
-  const { currentBid, onWithdrawBid } = props;
+  const {
+    currentBid,
+    canWithdraw,
+    onWithdrawBid,
+  } = props;
 
-  const [withdrawSuccessful, setWithdrawSuccessful] = useState<boolean>();
+  const {
+    renderErrorToast,
+    renderLoadingToast,
+    renderSuccessToast,
+  } = useToastMessage();
 
   const handleWithdrawBid = async () => {
-    const success = await onWithdrawBid();
-    setWithdrawSuccessful(success);
+    renderLoadingToast(
+      "Transaction pending...",
+      "Withdraw submitted to the network",
+    );
+
+    const { success, error } = await onWithdrawBid();
+
+    if (success) renderSuccessToast("Withdraw successful!");
+    else renderErrorToast("Withdraw failed", error);
   };
 
-  const label = currentBid.isZero() ?
+  const buttonText = currentBid.isZero() ?
     "No bid to withdraw" :
-    `Withdraw ${amountInEthText(currentBid)}`;
+    `Withdraw ${convertToEth(currentBid, true)}`;
 
   return (
-    <div className="flex flex-col p-10">
+    <Box>
       <Button
-        className="h-20"
-        text={label}
+        m={2}
+        size={"lg"}
+        variant={"outline"}
+        flexBasis={"auto"}
         onClick={handleWithdrawBid}
-        disabled={withdrawSuccessful !== undefined}
-      />
-      {withdrawSuccessful === true && "Withdraw successful"}
-      {withdrawSuccessful === false && "Failed to withdraw"}
-    </div>
+        disabled={!canWithdraw}
+      >
+        {buttonText}
+      </Button>
+    </Box>
   );
 };
 
 const BiddingForm = (props: {
   auction: AuctionType;
+  isActive: IUseAuctionable["isActive"];
   currentBid: IUseAuctionable["currentBid"];
   onAddToBid: IUseAuctionable["onAddToBid"];
   onWithdrawBid: IUseAuctionable["onWithdrawBid"];
@@ -48,100 +84,157 @@ const BiddingForm = (props: {
 }) => {
   const {
     auction,
+    isActive,
     currentBid,
     onAddToBid,
     onWithdrawBid,
-    transactionPending
+    transactionPending,
   } = props;
+
+  const {
+    renderErrorToast,
+    renderLoadingToast,
+    renderSuccessToast,
+  } = useToastMessage();
 
   const { connectedAccount, ConnectAccountButtons } = useConnectedAccount();
 
-  // NOTE: this should not be bidInWei, this should represent the amount to ADD to the bid
-  const [bidInWei, setBidInWei] = useState(BigNumber.from(0));
+  const [addToBidInWei, setAddToBidInWei] = useState<BigNumber>(
+    auction.highestBid.add(auction.minimumBidIncrement),
+  );
 
-  const handleBidInEth = (bidInEthNumber: number, bidInEthString: string) => {
-    // reject negative or "." (invalid) values
-    if (isNaN(bidInEthNumber) || bidInEthNumber < 0) return;
+  const minimumAddToBidValue = useMemo(
+    () => auction.highestBid.add(auction.minimumBidIncrement).sub(currentBid),
+    [currentBid, auction.highestBid, auction.minimumBidIncrement],
+  );
 
-    // if remaining value is 0 still setBidInWei (needed for last Total Bid update)
-    bidInEthNumber == 0 ?
-      setBidInWei(BigNumber.from(0)) :
-      setBidInWei(ethers.utils.parseEther(bidInEthString));
+  const formatAddToBidValue = (
+    amountInWei: BigNumber,
+    asNumber = false,
+  ): string | number => {
+    const amountInEth = convertToEth(amountInWei);
 
-    // https://docs.ethers.io/v5/api/utils/display-logic/#display-logic--units
+    return asNumber ? Number(amountInEth) : amountInEth;
   };
 
-  const addToBid = async () => {
-    const success = await onAddToBid(bidInWei);
+  const handleAddToBidInput = (amountInEthText: string) => {
+    const amountInEth = amountInEthText.replace(/ ETH/, "");
+    if (!amountInEth) return;
 
-    // indicate success/failure
+    const amountInWei = convertToWei(amountInEth);
+    setAddToBidInWei(amountInWei);
   };
+
+  const handleAddToBid = useCallback(async () => {
+    renderLoadingToast(
+      "Transaction pending...",
+      "Bid increment submitted to the network",
+    );
+
+    const { success, error } = await onAddToBid(addToBidInWei);
+    setAddToBidInWei(minimumAddToBidValue);
+
+    if (success) renderSuccessToast("Bid increment successful!");
+    else renderErrorToast("Bid increment failed", error);
+  }, [
+    onAddToBid,
+    addToBidInWei,
+    setAddToBidInWei,
+    minimumAddToBidValue,
+    renderErrorToast,
+    renderLoadingToast,
+    renderSuccessToast,
+  ]);
 
   if (!connectedAccount) {
     return <ConnectAccountButtons />;
   }
 
-  const handleTotalBid = () => {
-    return currentBid && ethers.utils.formatEther(currentBid?.add(bidInWei));
-  };
+  const totalBidInWei = currentBid ?
+    currentBid.add(addToBidInWei) :
+    addToBidInWei;
 
-  const totalBid = currentBid ? bidInWei.add(currentBid) : null;
+  const canAddToBid = totalBidInWei.gte(minimumAddToBidValue);
 
-  const notEnoughForBidding = currentBid && totalBid?.lte(auction.highestBid);
+  const isHighestBidder = auction.highestBidder === connectedAccount.address;
 
-  const isHighestBidder = auction.highestBidder === connectedAccount?.address;
+  const canWithdraw = !isHighestBidder && currentBid.gt(0);
 
-  const shouldDisplayWithdrawButton = auction.highestBidder !== connectedAccount.address;
+  const bidStepSize = auction.minimumBidIncrement.eq(0) ?
+    convertToWei("0.01") :
+    auction.minimumBidIncrement;
 
   return (
-    <div className="p-5 flex flex-wrap flex-col">
-      <div className="p-5 flex flex-wrap flex-row border-2 rounded-md">
-        <div className="border-r-2 p-5 text-justify">
-          Current Bid:{" "}
-          {currentBid ? ethers.utils.formatEther(currentBid) : null}
-          <span> </span> ETH
-        </div>
-        <div className="border-r-2 px-4 text-center">
-          Add to your bid:
-          <NumericInput
-            placeholder="Enter a number..."
-            majorStepSize={0.1}
-            min={0}
-            stepSize={0.1}
-            allowNumericCharactersOnly={true}
-            onValueChange={handleBidInEth}
-            // TODO: update value and reset after placing bid
-          />
-        </div>
-        <div className="p-5 font-bold font-10">
-          Total Bid: {currentBid ? handleTotalBid()?.toString() : null}
-          <span> </span> ETH
-        </div>
-      </div>
-      <div className="flex flex-row p-5">
-        <Button
-          className="flex flex-grow mx-1 "
-          text={
-            notEnoughForBidding && !isHighestBidder ?
-              `Can't place bid (need to add more than ${ethers.utils.formatEther(
-                auction.highestBid
-                  .add(auction.minimumBidIncrement)
-                  .sub(currentBid),
-              )} ETH)` :
-              "Place Bid"
-          }
-          onClick={addToBid}
-          loading={transactionPending}
-          disabled={auction.state !== 1 || notEnoughForBidding}
-        />
-        {shouldDisplayWithdrawButton && !currentBid.isZero() && (
+    <Box
+      mt={2}
+      mb={2}
+    >
+      <Flex
+        wrap={"wrap"}
+        justify="center"
+        align={"center"}
+        mt={2}
+        mb={3}
+        textAlign="center"
+      >
+        <Stat flexBasis={"auto"}>
+          <StatLabel>Current Bid</StatLabel>
+          <StatNumber>{convertToEth(currentBid, true)}</StatNumber>
+        </Stat>
+        <Stat flexBasis={"auto"}>
+          <StatLabel>Add</StatLabel>
+          <StatNumber>
+            <Center>
+              <NumberInput
+                maxW={"100px"}
+                onChange={handleAddToBidInput}
+                precision={4}
+                value={formatAddToBidValue(addToBidInWei)}
+                step={formatAddToBidValue(bidStepSize, true) as number}
+                defaultValue={formatAddToBidValue(minimumAddToBidValue)}
+                min={formatAddToBidValue(minimumAddToBidValue, true) as number}
+              >
+                <NumberInputField />
+                <NumberInputStepper>
+                  <NumberIncrementStepper />
+                  <NumberDecrementStepper />
+                </NumberInputStepper>
+              </NumberInput>
+            </Center>
+          </StatNumber>
+        </Stat>
+        <Stat flexBasis={"auto"}>
+          <StatLabel>Total Bid</StatLabel>
+          <StatNumber>{convertToEth(totalBidInWei, true)}</StatNumber>
+        </Stat>
+      </Flex>
+      <Divider />
+      <Flex
+        flexWrap="wrap"
+        justifyContent={"center"}
+        alignItems="center"
+        mt={2}
+      >
+        <Center>
           <WithdrawBidButton
             currentBid={currentBid}
+            canWithdraw={canWithdraw}
             onWithdrawBid={onWithdrawBid}
           />
-        )}
-      </div>
-    </div>
+          <Spacer />
+          <Button
+            m={2}
+            size={"lg"}
+            variant={"outline"}
+            flexBasis={"auto"}
+            disabled={!isActive || !canAddToBid}
+            onClick={handleAddToBid}
+          >
+            Add to Bid
+          </Button>
+        </Center>
+      </Flex>
+    </Box>
   );
 };
 
