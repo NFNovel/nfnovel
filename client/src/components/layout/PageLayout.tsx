@@ -79,7 +79,7 @@ const PageLayout = (props: PageLayoutProps) => {
   );
 
   return (
-    <Container maxW={"container.md"}>
+    <Box maxW={{ base: "container.sm", lg: "container.md" }}>
       <VStack
         spacing={SPACING}
         height="100%"
@@ -94,7 +94,7 @@ const PageLayout = (props: PageLayoutProps) => {
         ))}
       </VStack>
       <Spacer height={"10px"} />
-    </Container>
+    </Box>
   );
 };
 
