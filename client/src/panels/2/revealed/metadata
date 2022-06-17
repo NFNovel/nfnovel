@@ -1,0 +1,45 @@
+{
+  "pageNumber": 2,
+  "panelRows": [
+    {
+      "rowHeight": "40%",
+      "panelColumns": [
+        {
+          "panelTokenId": 2,
+          "columnWidth": "40%"
+        },
+        {
+          "panelTokenId": 3,
+          "columnWidth": "60%"
+        }
+      ]
+    },
+    {
+      "rowHeight": "20%",
+      "panelColumns": [
+        {
+          "panelTokenId": 4,
+          "columnWidth": "100%"
+        }
+      ]
+    },
+    {
+      "rowHeight": "20%",
+      "panelColumns": [
+        {
+          "panelTokenId": 5,
+          "columnWidth": "100%"
+        }
+      ]
+    },
+    {
+      "rowHeight": "20%",
+      "panelColumns": [
+        {
+          "panelTokenId": 6,
+          "columnWidth": "100%"
+        }
+      ]
+    }
+  ]
+}
