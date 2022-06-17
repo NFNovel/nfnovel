@@ -97,10 +97,22 @@ const BiddingForm = (props: {
     renderSuccessToast,
   } = useToastMessage();
 
-  const { connectedAccount, ConnectAccountButtons } = useConnectedAccount();
+  const {
+    hasSigner,
+    connectedAccount,
+    ConnectAccountButtons,
+  } = useConnectedAccount();
 
   const [addToBidInWei, setAddToBidInWei] = useState<BigNumber>(
     auction.highestBid.add(auction.minimumBidIncrement),
+  );
+
+  const bidStepSize = useMemo(
+    () =>
+      auction.minimumBidIncrement.eq(0) ?
+        convertToWei("0.001") :
+        auction.minimumBidIncrement,
+    [auction.minimumBidIncrement],
   );
 
   const minimumAddToBidValue = useMemo(
@@ -154,15 +166,10 @@ const BiddingForm = (props: {
     currentBid.add(addToBidInWei) :
     addToBidInWei;
 
-  const canAddToBid = totalBidInWei.gte(minimumAddToBidValue);
-
   const isHighestBidder = auction.highestBidder === connectedAccount.address;
 
-  const canWithdraw = !isHighestBidder && currentBid.gt(0);
-
-  const bidStepSize = auction.minimumBidIncrement.eq(0) ?
-    convertToWei("0.01") :
-    auction.minimumBidIncrement;
+  const canAddToBid = hasSigner && totalBidInWei.gte(minimumAddToBidValue);
+  const canWithdraw = hasSigner && !isHighestBidder && currentBid.gt(0);
 
   return (
     <Box
