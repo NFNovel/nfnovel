@@ -7,12 +7,12 @@
     "node": "hardhat node",
     "pretest": "npm run build",
     "test": "hardhat test",
-    "dev": "hardhat run scripts/dev.ts --network localhost",
+    "predev": "npm run build",
+    "dev": "hardhat dev",
     "clean": "hardhat clean",
     "build": "hardhat compile",
-    "revealPage": "hardhat revealPage --network localhost --page",
-    "endPanelAuction": "hardhat endPanelAuction --network localhost --panel-auction-id",
-    "deploy": "hardhat run scripts/deploy.ts --network"
+    "revealPage": "hardhat revealPage",
+    "deploy": "hardhat deploy"
   },
   "keywords": [],
   "author": "the-vampiire",
