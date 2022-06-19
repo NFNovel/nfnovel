@@ -7,7 +7,8 @@ import "@typechain/hardhat";
 import "hardhat-gas-reporter";
 import "solidity-coverage";
 
-import "./tasks/deploy-contract";
+// import custom task defs
+import "./tasks";
 
 dotenv.config();
 
@@ -20,53 +21,6 @@ task("accounts", "Prints the list of accounts", async (taskArgs, hre) => {
     console.log(account.address);
   }
 });
-
-task("revealPage", "Reveals the page")
-  .addParam<number>("page", "the page number to reveal")
-  .setAction(async (taskArgs: { page: number }, hre) => {
-    const pageNumber = taskArgs.page;
-
-    // eslint-disable-next-line @typescript-eslint/no-var-requires
-    let NFNovelDeployment;
-    try {
-      NFNovelDeployment = require("./deployments/NFNovel.json");
-    } catch (error) {
-      console.error("No deployment found");
-      process.exit(1);
-    }
-
-    const nfnovel = await hre.ethers.getContractAt(
-      "NFNovel",
-      NFNovelDeployment.contractAddress
-    );
-
-    if (NFNovelDeployment.network.chainId !== hre.network.config.chainId)
-      return console.log(
-        "must be called on same network the contract is deployed to:",
-        NFNovelDeployment.network
-      );
-
-    const revealedBaseURIs: { [pageNumber: string]: string } = {
-      // cover
-      1: "ipfs://QmcLP748DuiaWhky7kmi4VPL7r6LGV5njyzZ6HdusvhfBR",
-      // first page
-      2: "ipfs://QmXa2JNSeLTznLFf3UpUXpoDygKAdMX2v92iFAdEDNJTp4",
-    };
-
-    const revealedBaseURI = revealedBaseURIs[pageNumber];
-
-    if (!revealedBaseURI)
-      return console.log("Invalid page number, no base URI found");
-
-    try {
-      await nfnovel.revealPage(pageNumber, revealedBaseURI);
-      console.log(
-        `page [${pageNumber}] revealed with base URI [${revealedBaseURI}]`
-      );
-    } catch (error: any) {
-      console.log("failed to reveal page", error.message);
-    }
-  });
 
 // You need to export an object to set up your config
 // Go to https://hardhat.org/config/ to learn more
