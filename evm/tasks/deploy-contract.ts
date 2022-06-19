@@ -1,8 +1,62 @@
 import { task, types } from "hardhat/config";
+import { HardhatRuntimeEnvironment } from "hardhat/types";
 import recordDeployment, {
   DeploymentEnvironment,
   doesDeploymentRecordExist,
-} from "../scripts/utils/record-deployment";
+} from "./utils/record-deployment";
+
+export const deployContract = async (
+  hre: HardhatRuntimeEnvironment,
+  contractName: string,
+  constructorArgs: string[],
+  options: {
+    report?: boolean;
+    overwrite?: boolean;
+    environment?: DeploymentEnvironment;
+  } = {}
+) => {
+  const {
+    report = false,
+    overwrite = false,
+    environment = "development",
+  } = options;
+
+  if (environment === "production") {
+    const deploymentRecordExists = doesDeploymentRecordExist(
+      contractName,
+      environment
+    );
+
+    if (deploymentRecordExists && !overwrite) {
+      console.error(
+        `Existing production deployment record found for ${contractName}. Must pass --overwrite flag to replace it`
+      );
+
+      process.exit(1);
+    }
+  }
+
+  const ContractFactory = await hre.ethers.getContractFactory(contractName);
+
+  const contractInstance = await ContractFactory.deploy(...constructorArgs);
+
+  await contractInstance.deployed();
+
+  const deploymentRecord = await recordDeployment(
+    contractName,
+    contractInstance,
+    environment
+  );
+
+  if (report) {
+    console.log(
+      `${contractName} deployed and recorded in env [${environment}]:`,
+      deploymentRecord
+    );
+  }
+
+  return deploymentRecord;
+};
 
 const deployContractTask = task(
   "deploy",
@@ -24,7 +78,7 @@ const deployContractTask = task(
   )
   .addOptionalParam(
     "environment",
-    "the environment the deployment belongs to",
+    "the environment the NFNovel deployment record belongs to",
     "development",
     types.string
   )
@@ -45,37 +99,11 @@ const deployContractTask = task(
       const { contractName, constructorArgs, environment, overwrite } =
         taskArgs;
 
-      if (environment === "production") {
-        const deploymentRecordExists = doesDeploymentRecordExist(
-          contractName,
-          environment
-        );
-
-        if (deploymentRecordExists && !overwrite) {
-          console.error(
-            `Existing production deployment record found for ${contractName}. Must pass --overwrite flag to replace it`
-          );
-
-          process.exit(1);
-        }
-      }
-
-      const ContractFactory = await hre.ethers.getContractFactory(contractName);
-
-      const contractInstance = await ContractFactory.deploy(...constructorArgs);
-
-      await contractInstance.deployed();
-
-      const deploymentRecord = await recordDeployment(
-        contractName,
-        contractInstance,
-        environment
-      );
-
-      console.log(
-        `${contractName} deployed and recorded in env [${environment}]:`,
-        deploymentRecord
-      );
+      await deployContract(hre, contractName, constructorArgs, {
+        overwrite,
+        environment,
+        report: true,
+      });
     }
   );
 
