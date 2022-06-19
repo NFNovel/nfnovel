@@ -57,6 +57,16 @@ contract NFNovel is ERC721, INFNovel, Ownable, Auctionable {
             super.supportsInterface(interfaceId);
     }
 
+    // TODO: test
+    function getCurrentPageNumber()
+        public
+        view
+        override
+        returns (uint256 currentPageNumber)
+    {
+        return _pageNumbers.current();
+    }
+
     function getPage(uint256 pageNumber)
         public
         view
