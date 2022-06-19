@@ -1,6 +1,9 @@
-import { resolve } from "path";
+/* eslint-disable @typescript-eslint/no-var-requires */
+import path from "path";
 import { writeFile, mkdir, stat } from "fs/promises";
 import type { Contract } from "ethers";
+
+export type DeploymentEnvironment = "development" | "production";
 
 export interface IContractDeploymentRecord {
   deployedAt: string;
@@ -12,40 +15,76 @@ export interface IContractDeploymentRecord {
   };
 }
 
-const recordDeployment: (
+export type ContractDeploymentRecords = {
+  [key in DeploymentEnvironment]: IContractDeploymentRecord;
+};
+
+// NOTE: relative to hardhat config (project root)
+const projectRootPath = process.cwd();
+const deploymentsDirPath = path.resolve(projectRootPath, "deployments");
+
+const buildDeploymentRecordsPath = (contractName: string) =>
+  path.resolve(deploymentsDirPath, `${contractName}.json`);
+
+export const doesDeploymentRecordExist = (
   contractName: string,
-  deployedContract: Contract
-) => Promise<IContractDeploymentRecord> = async (
-  contractName,
-  deployedContract
+  environment: DeploymentEnvironment
 ) => {
+  const deploymentRecordPath = buildDeploymentRecordsPath(contractName);
+
+  try {
+    const deploymentRecords: ContractDeploymentRecords = require(deploymentRecordPath);
+
+    return !!deploymentRecords[environment];
+  } catch (_) {
+    return false;
+  }
+};
+
+const recordDeployment = async (
+  contractName: string,
+  deployedContract: Contract,
+  environment: DeploymentEnvironment
+): Promise<IContractDeploymentRecord> => {
   if (!deployedContract.address)
     throw new Error("Contract has not been deployed");
 
-  const ownerAddress = await deployedContract.signer.getAddress();
   const network = await deployedContract.provider.getNetwork();
+  const ownerAddress = await deployedContract.signer.getAddress();
 
   const deploymentRecord: IContractDeploymentRecord = {
+    network,
     ownerAddress,
     deployedAt: new Date().toISOString(),
     contractAddress: deployedContract.address,
-    network,
   };
 
-  const dirPath = resolve(__dirname, `../../deployments`);
-
-  await stat(dirPath).catch(async () => {
-    console.log("Creating deployments dir at: ", dirPath);
-    await mkdir(dirPath);
+  await stat(deploymentsDirPath).catch(async () => {
+    console.log("Creating deployments dir at:", deploymentsDirPath);
+    await mkdir(deploymentsDirPath);
   });
 
-  const deploymentRecordPath = resolve(dirPath, `${contractName}.json`);
+  const deploymentRecordPath = buildDeploymentRecordsPath(contractName);
 
-  console.log("Writing deployment record to:", deploymentRecordPath);
+  await stat(deploymentRecordPath).catch(async () => {
+    console.log(
+      `Creating deployment record for [${contractName}] file at [${deploymentRecordPath}]`
+    );
+
+    await writeFile(deploymentRecordPath, JSON.stringify({}));
+  });
+
+  const deploymentRecords: ContractDeploymentRecords = require(deploymentRecordPath);
+
+  deploymentRecords[environment] = deploymentRecord;
 
   await writeFile(
     deploymentRecordPath,
-    JSON.stringify(deploymentRecord, null, 2)
+    JSON.stringify(deploymentRecords, null, 2)
+  );
+
+  console.log(
+    `Saved deployment record for environment [${environment}] to [${deploymentRecordPath}]`
   );
 
   return deploymentRecord;
