@@ -15,7 +15,7 @@ import {
   StatNumber,
 } from "@chakra-ui/react";
 import { BigNumber } from "ethers";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 
 import useConnectedAccount from "src/hooks/use-connected-account";
 import useToastMessage from "src/hooks/use-toast-message";
@@ -88,7 +88,6 @@ const BiddingForm = (props: {
     currentBid,
     onAddToBid,
     onWithdrawBid,
-    transactionPending,
   } = props;
 
   const {
@@ -103,8 +102,15 @@ const BiddingForm = (props: {
     ConnectAccountButtons,
   } = useConnectedAccount();
 
-  const [addToBidInWei, setAddToBidInWei] = useState<BigNumber>(
-    auction.highestBid.add(auction.minimumBidIncrement),
+  // updates as auction / connected bidder data changes
+  const computeMinimumAddToBidValue = useCallback(
+    () => auction.highestBid.add(auction.minimumBidIncrement).sub(currentBid),
+    [auction.highestBid, auction.minimumBidIncrement, currentBid],
+  );
+
+  const minimumAddToBidValue = useMemo(
+    () => computeMinimumAddToBidValue(),
+    [computeMinimumAddToBidValue],
   );
 
   const bidStepSize = useMemo(
@@ -115,9 +121,12 @@ const BiddingForm = (props: {
     [auction.minimumBidIncrement],
   );
 
-  const minimumAddToBidValue = useMemo(
-    () => auction.highestBid.add(auction.minimumBidIncrement).sub(currentBid),
-    [currentBid, auction.highestBid, auction.minimumBidIncrement],
+  const [addToBidInWei, setAddToBidInWei] = useState<BigNumber>(minimumAddToBidValue);
+
+  // when the minimum add to bid value changes then update to keep the form value consistent with current state of the auction
+  useEffect(
+    () => setAddToBidInWei(minimumAddToBidValue),
+    [minimumAddToBidValue],
   );
 
   const formatAddToBidValue = (
@@ -140,19 +149,16 @@ const BiddingForm = (props: {
   const handleAddToBid = useCallback(async () => {
     renderLoadingToast(
       "Transaction pending...",
-      "Bid increment submitted to the network",
+      "Waiting for signature to submit bid addition to the network",
     );
 
     const { success, error } = await onAddToBid(addToBidInWei);
-    setAddToBidInWei(minimumAddToBidValue);
 
     if (success) renderSuccessToast("Bid increment successful!");
     else renderErrorToast("Bid increment failed", error);
   }, [
-    onAddToBid,
     addToBidInWei,
-    setAddToBidInWei,
-    minimumAddToBidValue,
+    onAddToBid,
     renderErrorToast,
     renderLoadingToast,
     renderSuccessToast,
