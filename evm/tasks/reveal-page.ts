@@ -6,9 +6,9 @@ import {
 } from "./utils/record-deployment";
 
 const FIRST_PAGE_REVEALED_BASE_URI =
-  "ipfs://QmcLP748DuiaWhky7kmi4VPL7r6LGV5njyzZ6HdusvhfBR";
+  "ipfs://QmRbR29tusQaTsYRhvqtSiEz8NBvkasMhgeJboDtkZ7ouY";
 const SECOND_PAGE_REVEALED_BASE_URI =
-  "ipfs://QmXa2JNSeLTznLFf3UpUXpoDygKAdMX2v92iFAdEDNJTp4";
+  "ipfs://QmQP4YGvt2Em4or54r9rm9NP5CG6cFE7YZj7kFQH1MnjsG";
 
 export const revealPage = async (
   hre: HardhatRuntimeEnvironment,
@@ -35,7 +35,9 @@ export const revealPage = async (
   );
 
   try {
-    await nfnovel.revealPage(pageNumber, revealedBaseURI);
+    const tx = await nfnovel.revealPage(pageNumber, revealedBaseURI);
+    await tx.wait();
+
     if (report) {
       console.log(`Page [${pageNumber}] revealed`);
     }

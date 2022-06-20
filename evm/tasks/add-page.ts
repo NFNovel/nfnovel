@@ -29,7 +29,9 @@ export const addPage = async (
     deploymentRecord.contractAddress
   );
 
-  await nfnovel.addPage(panelsCount, obscuredBaseURI);
+  const tx = await nfnovel.addPage(panelsCount, obscuredBaseURI);
+
+  await tx.wait();
 
   if (report) {
     const currentPageNumber = await nfnovel.getCurrentPageNumber();
