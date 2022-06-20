@@ -1,4 +1,4 @@
-# NFNovel MVP
+# NFNovel Hackathon
 
 ## structure
 
@@ -29,18 +29,7 @@ in `.vscode/` there are some recommended workspace extensions and settings. you 
 the client `client/tsconfig.json` has aliases set up for importing:
 
 - `@styles/*`: any CSS in the `client/styles/` dir
-- `@evm/*`: any contract ABI in `evm/artifacts/contracts/<ContractName.sol>/<ContractName>.json`
-
-> example
-
-```ts
-// global
-import "@styles/globals.css";
-// CSS module
-import styles from "@styles/Home.module.css";
-// contract ABI (.json extension is implicit from tsconfig path aliases)
-import GreeterABI from "@evm/Greeter.sol/Greeter";
-```
+- `@evm/*`: access to files in `evm/` dir (artifacts, types, deployment records)
 
 ### scripts
 
@@ -60,7 +49,7 @@ npm install
 2. run dev mode (compiles evm and runs next.js dev mode)
 
 - starts a local hardhat node
-- compiles and deploys the contracts (`evm/scripts/deploy.ts`) and stores their deployment records in `evm/deployments/<Contract>.json`
+- compiles and deploys the contracts (`evm/tasks/dev.ts`) and stores the `development` deployment record in `evm/deployments/<Contract>.json`
 - starts the client next.js dev server
 
 ```sh
