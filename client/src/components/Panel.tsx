@@ -1,5 +1,12 @@
 import { BigNumber } from "ethers";
-import { Box, Image, Spinner, useDisclosure, Collapse } from "@chakra-ui/react";
+import {
+  Text,
+  Box,
+  Image,
+  Spinner,
+  useDisclosure,
+  Collapse,
+} from "@chakra-ui/react";
 import { useCallback, useEffect, useState } from "react";
 
 import useNFNovel from "src/hooks/use-nfnovel";
@@ -59,6 +66,7 @@ const Panel = (props: PanelProps) => {
     try {
       await nfnovelSigner.mintPanel(panelTokenId);
       await updateConnectedAccount();
+      setPanelIsSold(true);
 
       return true;
     } catch (error: any) {
@@ -106,11 +114,7 @@ const Panel = (props: PanelProps) => {
             }}
             ClaimTokenButton={() =>
               panelIsSold ? (
-                // THINK: this is a weird way of handling this..
-                <StyledButton
-                  disabled={true}
-                  buttonText={"Already Minted!"}
-                />
+                <Text>You own panel {panelTokenId.toString()}!</Text>
               ) : (
                 <MintTokenButton
                   buttonLabel="Mint Panel!"

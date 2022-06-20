@@ -11,7 +11,8 @@
   "include": [
     "./scripts",
     "./test",
-    "./typechain"
+    "./typechain",
+    "./tasks",
   ],
   "files": [
     "./hardhat.config.ts"

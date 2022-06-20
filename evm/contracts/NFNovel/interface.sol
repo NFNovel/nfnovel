@@ -21,15 +21,17 @@ interface INFNovel is OpenSeaCompatible {
     // event CreatorAdded(Creator creator);
     // event CreatorModified(Creator creator);
 
-    event PageAdded(
-        uint256 indexed pageNumber,
-        uint256[] indexed panelTokenIds
-    );
+    // NOTE: do not index the panelTokenIds as they will not be readable, only a hash of the array will be logged
+    // https://docs.soliditylang.org/en/v0.8.15/contracts.html#events
+    // > A topic can only hold a single word (32 bytes) so if you use a reference type for an indexed argument, the Keccak-256 hash of the value is stored as a topic instead.
+    event PageAdded(uint256 indexed pageNumber, uint256[] panelTokenIds);
 
-    event PageRevealed(
-        uint256 indexed pageNumber,
-        uint256[] indexed panelTokenIds
-    );
+    event PageRevealed(uint256 indexed pageNumber, uint256[] panelTokenIds);
+
+    function getCurrentPageNumber()
+        external
+        view
+        returns (uint256 currentPageNumber);
 
     function getPage(uint256 pageNumber)
         external

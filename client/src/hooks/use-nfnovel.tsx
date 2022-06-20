@@ -1,19 +1,19 @@
 import { useContract, useProvider } from "wagmi";
 import { useCallback, useEffect, useState } from "react";
-import NFNovelDeployment from "@evm/deployments/NFNovel.json";
-import NFNovelContract from "@evm/contracts/NFNovel/NFNovel.sol/NFNovel.json";
 import { NFNovel } from "@evm/types/NFNovel";
+
+import getContractDetails from "src/utils/get-contract-details";
 
 import useConnectedAccount from "./use-connected-account";
 
 import type { BigNumberish } from "ethers";
-import type { Auction } from "src/types/auction";
 
 // FUTURE: set as input arg to useNFNovel (based on address from NFNovels lookup in routing)
+const contractDetails = getContractDetails();
+
 export const nfnovelContractConfig = {
-  contractInterface: NFNovelContract.abi,
-  addressOrName:
-    process.env.NFNOVEL_CONTRACT_ADDRESS || NFNovelDeployment.contractAddress,
+  contractInterface: contractDetails.interface,
+  addressOrName: contractDetails.deployment.contractAddress,
 };
 
 const useNFNovel = () => {
@@ -31,16 +31,12 @@ const useNFNovel = () => {
 
   // NOTE: updates if signer changes
   useEffect(() => {
-    const connectSigner = () => {
-      if (!connectedAccount?.signer) return;
+    setNfnovelSigner((nfnovelSigner) => {
+      if (!connectedAccount?.signer) return nfnovelSigner;
 
-      setNfnovelSigner((nfnovelSigner) =>
-        nfnovelSigner.connect(connectedAccount.signer),
-      );
-    };
-
-    connectSigner();
-  }, [connectedAccount?.signer]);
+      return nfnovelSigner.connect(connectedAccount.signer);
+    });
+  }, [connectedAccount]);
 
   const getNovelDetails = useCallback(async () => {
     const title = await nfnovelReader.name();

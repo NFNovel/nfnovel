@@ -79,9 +79,6 @@ const MintTokenButton = (props: MintTokenButtonProps) => {
 
   if (!connectedAccount) return <ConnectAccountButtons />;
 
-  if (mintedTokenId)
-    return <div>Successfully minted token {mintedTokenId.toString()}!</div>;
-
   return (
     <StyledButton
       onClick={handleMint}

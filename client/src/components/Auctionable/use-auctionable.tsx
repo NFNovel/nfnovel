@@ -87,6 +87,7 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
       const timeRemaining = computeTimeRemaining(auction);
 
       setTimeRemaining(timeRemaining);
+      if (timeRemaining.toMillis() <= 0) setIsActive(false);
     },
     // NOTE: variable interval - only go down to seconds when < 2 min
     auction ? computeTimeRemainingInterval(auction) : null,
@@ -226,6 +227,8 @@ const useAuctionable = (config: IUseAuctionableConfig): IUseAuctionable => {
   /**
    * EVENT LISTENERS
    */
+
+  // THINK: how to prevent the needless reconnecting of websocket subscriptions for these event listeners during final countdown that updates every second for timeRemaining?
 
   const {
     filterAuctionEnded,

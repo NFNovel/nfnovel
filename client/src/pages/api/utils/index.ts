@@ -1,18 +1,5 @@
 import path from "path";
-import { readdir, readFile, stat } from "fs/promises";
-
-import type { NFNovel } from "@evm/types/NFNovel";
-
-export const getOwnedPanelTokenIds = async (
-  nfnovel: NFNovel,
-  ownerAddress: string,
-) => {
-  const filterTo = nfnovel.filters.Transfer(null, ownerAddress);
-
-  const result = await nfnovel.queryFilter(filterTo, -10, "latest");
-
-  return result.map((event) => event.args.tokenId.toNumber());
-};
+import { readdir, readFile } from "fs/promises";
 
 // NOTE: these names suck but it works...MVP shit
 

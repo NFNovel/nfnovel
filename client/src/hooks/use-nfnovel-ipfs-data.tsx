@@ -10,48 +10,10 @@ import type { BigNumberish } from "ethers";
 import type { ipfsURI, PanelMetadata } from "src/types/token";
 import type { Page as PageType, PageMetadata } from "src/types/page";
 
-// TODO: rename to IpfsPanelData
 export type IpfsPanelData = {
   imageSource: string;
   metadata: PanelMetadata;
   panelTokenId: BigNumberish;
-};
-
-// TODO: make available at <Page.baseURL>/metadata
-const mockPageMetadata: { [pageNumber: string]: PageMetadata } = {
-  "1": {
-    pageNumber: 1,
-    panelRows: [
-      {
-        rowHeight: "100%",
-        panelColumns: [{ panelTokenId: 1, columnWidth: "100%" }],
-      },
-    ],
-  },
-  "2": {
-    pageNumber: 2,
-    panelRows: [
-      {
-        rowHeight: "40%",
-        panelColumns: [
-          { panelTokenId: 2, columnWidth: "40%" },
-          { panelTokenId: 3, columnWidth: "60%" },
-        ],
-      },
-      {
-        rowHeight: "20%",
-        panelColumns: [{ panelTokenId: 4, columnWidth: "100%" }],
-      },
-      {
-        rowHeight: "20%",
-        panelColumns: [{ panelTokenId: 5, columnWidth: "100%" }],
-      },
-      {
-        rowHeight: "20%",
-        panelColumns: [{ panelTokenId: 6, columnWidth: "100%" }],
-      },
-    ],
-  },
 };
 
 const useNFNovelIpfsData = () => {
@@ -136,7 +98,8 @@ const useNFNovelIpfsData = () => {
       loadImageSource,
       cachedTokenURIs,
       getPanelTokenUri,
-      connectedAccount?.isPanelOwner,
+      // NOTE: changes to address or owned token IDs causes update
+      connectedAccount,
     ],
   );
 
