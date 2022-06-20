@@ -14,21 +14,18 @@ function PageList() {
 
   const [hasMore, setHasMore] = useState(true);
 
-  const fetchPageData = useCallback(
-    async (pageNumber: number) => {
-      const page = await getPage(pageNumber);
+  const fetchPageData = useCallback(async () => {
+    const page = await getPage(pages.length + 1);
 
-      if (page) {
-        setPages([...pages, page]);
-      } else {
-        setHasMore(false);
-      }
-    },
-    [getPage, pages],
-  );
+    if (page) {
+      setPages([...pages, page]);
+    } else {
+      setHasMore(false);
+    }
+  }, [getPage, pages]);
 
   useEffect(() => {
-    if (!pages.length) fetchPageData(1);
+    if (!pages.length) fetchPageData();
   }, [pages, fetchPageData]);
 
   if (!pages.length) return null;
@@ -41,9 +38,7 @@ function PageList() {
           paddingBottom: "20px",
         }}
         dataLength={pages.length}
-        next={() => {
-          fetchPageData(pages.length + 1);
-        }}
+        next={fetchPageData}
         hasMore={hasMore}
         loader={
           <Center>

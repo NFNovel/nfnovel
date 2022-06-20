@@ -1,5 +1,5 @@
 import path from "path";
-import { readdir, readFile, stat } from "fs/promises";
+import { readdir, readFile } from "fs/promises";
 
 import type { NFNovel } from "@evm/types/NFNovel";
 

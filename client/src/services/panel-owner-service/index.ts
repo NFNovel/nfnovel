@@ -1,5 +1,4 @@
 import axios from "axios";
-import { NFNovel } from "@evm/types/NFNovel";
 
 import type { AxiosStatic } from "axios";
 import type { BigNumber } from "ethers";

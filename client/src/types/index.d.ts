@@ -8,9 +8,9 @@ declare global {
 
   namespace NodeJS {
     interface ProcessEnv {
-      INFURA_API_KEY: string;
-      ALCHEMY_API_KEY: string;
-      ETHERSCAN_API_KEY: string;
+      NEXT_PUBLIC_ALCHEMY_API_KEY: string;
+      NEXT_PUBLIC_NETWORK_CHAIN_ID: string;
+      NEXT_PUBLIC_NFNOVEL_CONTRACT_ADDRESS: string;
     }
   }
 }

@@ -22,18 +22,16 @@ function Page(props: { page: PageType }) {
 
   useEffect(() => {
     const loadPanelsData = async () => {
-      if (ipfsStatus !== "connected" || !page) return;
-
       const panelsData = await getPagePanelsData(page);
       setpagePanelsData(panelsData);
     };
 
     const loadPageMetadata = async () => {
-      if (ipfsStatus !== "connected" || !page) return;
-
       const pageMetadata = await getPageMetadata(page);
       setPageMetadata(pageMetadata);
     };
+
+    if (ipfsStatus !== "connected" || !page) return;
 
     loadPageMetadata();
     loadPanelsData();
