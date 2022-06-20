@@ -8,6 +8,7 @@ import {
 } from "react";
 import { Tag, Text } from "@chakra-ui/react";
 
+import useNFNovel from "src/hooks/use-nfnovel";
 import PanelOwnerService from "src/services/panel-owner-service";
 import useToastMessage from "src/hooks/use-toast-message";
 
@@ -39,6 +40,7 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
   const { network: providerNetwork } = useProvider();
   const { activeConnector: activeWallet } = useConnect();
 
+  const { nfnovelReader } = useNFNovel();
   const { renderSuccessToast } = useToastMessage({});
 
   const [connectedAccount, setConnectedAccount] = useState<IConnectedAccount | null>(null);
@@ -61,6 +63,7 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
       null;
 
     const ownedPanelTokenIds = await PanelOwnerService.getOwnedPanelTokenIds(
+      nfnovelReader,
       address,
     );
 
@@ -72,25 +75,29 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
     };
 
     setConnectedAccount(connectedAccount);
-
-    renderSuccessToast(
-      `${activeWallet?.name} Wallet`,
-      <Text>
-        Connected as{" "}
-        <Tag
-          variant={"solid"}
-          color="black"
-        >
-          {address.slice(0, 6)}...
-        </Tag>
-      </Text>,
-    );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [activeWallet, activeSigner, providerNetwork]);
 
   useEffect(() => {
     updateConnectedAccount();
   }, [updateConnectedAccount]);
+
+  useEffect(() => {
+    if (connectedAccount?.address)
+      renderSuccessToast(
+        `${activeWallet?.name} Wallet`,
+        <Text>
+          Connected as{" "}
+          <Tag
+            variant={"solid"}
+            color="black"
+          >
+            {connectedAccount?.address.slice(0, 6)}...
+          </Tag>
+        </Text>,
+      );
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [connectedAccount?.address]);
 
   return (
     <ConnectedAccountContext.Provider

@@ -1,22 +1,12 @@
 import nc from "next-connect";
-import NFNovelContract from "@evm/contracts/NFNovel/NFNovel.sol/NFNovel.json";
-import { NFNovel } from "@evm/types/NFNovel";
-// NOTE: only available after running deploy script
-import NFNovelDeployment from "@evm/deployments/NFNovel.json";
 
-import { getOwnedPanelTokenIds, loadRevealedPanelMetadata } from "./utils";
-import getContract from "./utils/get-contract";
+import { loadRevealedPanelMetadata } from "./utils";
 
 import type { NextApiRequest, NextApiResponse } from "next";
 
 interface PanelsPathRequest extends NextApiRequest {
   params: Record<string, any>;
 }
-
-const nfnovel = getContract<NFNovel>(
-  NFNovelContract.abi,
-  NFNovelDeployment.contractAddress,
-);
 
 const handler = nc<PanelsPathRequest, NextApiResponse>({
   attachParams: true,
@@ -29,18 +19,12 @@ const handler = nc<PanelsPathRequest, NextApiResponse>({
 
 const basePath = "/api/panels";
 
+// TODO: protect with owner auth
 // loadRevealedPanelMetadata
 handler.get(`${basePath}/revealed/:panelTokenId/metadata`, async (req, res) => {
   const { panelTokenId } = req.params;
 
   return res.json(await loadRevealedPanelMetadata(panelTokenId));
-});
-
-// getOwnedPanelTokenIds
-handler.get(`${basePath}/:ownerAddress/owned`, async (req, res) => {
-  const { ownerAddress } = req.params;
-
-  return res.json(await getOwnedPanelTokenIds(nfnovel, ownerAddress));
 });
 
 export default handler;

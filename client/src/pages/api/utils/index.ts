@@ -1,19 +1,6 @@
 import path from "path";
 import { readdir, readFile } from "fs/promises";
 
-import type { NFNovel } from "@evm/types/NFNovel";
-
-export const getOwnedPanelTokenIds = async (
-  nfnovel: NFNovel,
-  ownerAddress: string,
-) => {
-  const filterTo = nfnovel.filters.Transfer(null, ownerAddress);
-
-  const result = await nfnovel.queryFilter(filterTo, -10, "latest");
-
-  return result.map((event) => event.args.tokenId.toNumber());
-};
-
 // NOTE: these names suck but it works...MVP shit
 
 const buildRevealedDirPath = (panelsMetadataPath: string, pageNumber: string) =>

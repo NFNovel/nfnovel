@@ -1,11 +1,14 @@
 import axios from "axios";
 
-import type { AxiosStatic } from "axios";
+import type { NFNovel } from "@evm/types/NFNovel";
+
 import type { BigNumber } from "ethers";
+import type { AxiosStatic } from "axios";
 import type { PanelMetadata } from "src/types/token";
 
 export interface IPanelOwnerService {
   getOwnedPanelTokenIds: (
+    nfnovelReader: NFNovel,
     ownerAddress: string,
   ) => Promise<(BigNumber | number)[]>;
   getRevealedPanelMetadata: (
@@ -25,12 +28,15 @@ export const createPanelOwnerService = (
   });
 
   const PanelOwnerService: IPanelOwnerService = {
-    getOwnedPanelTokenIds: async (ownerAddress) => {
-      const { data } = await apiRequest.get(
-        `/api/panels/${ownerAddress}/owned`,
-      );
+    getOwnedPanelTokenIds: async (
+      nfnovelReader: NFNovel,
+      ownerAddress: string,
+    ) => {
+      const filterTo = nfnovelReader.filters.Transfer(null, ownerAddress);
 
-      return data;
+      const result = await nfnovelReader.queryFilter(filterTo, -10, "latest");
+
+      return result.map((event) => event.args.tokenId.toNumber());
     },
 
     // FUTURE: set up authorization
