@@ -1,4 +1,5 @@
 import { task, types } from "hardhat/config";
+import type { BigNumber } from "ethers";
 import type { HardhatRuntimeEnvironment } from "hardhat/types";
 import {
   DeploymentEnvironment,
@@ -29,7 +30,9 @@ export const addPage = async (
     deploymentRecord.contractAddress
   );
 
-  await nfnovel.addPage(panelsCount, obscuredBaseURI);
+  const tx = await nfnovel.addPage(panelsCount, obscuredBaseURI);
+
+  await tx.wait();
 
   if (report) {
     const currentPageNumber = await nfnovel.getCurrentPageNumber();
@@ -37,7 +40,7 @@ export const addPage = async (
     const page = await nfnovel.getPage(currentPageNumber);
     console.log(
       `Page [${currentPageNumber.toString()}] added with panel token IDs [${page.panelTokenIds
-        .map((tokenId) => tokenId.toString())
+        .map((tokenId: BigNumber) => tokenId.toString())
         .toString()}]`
     );
   }

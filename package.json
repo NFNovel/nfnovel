@@ -18,7 +18,9 @@
     "test": "npm run test:evm && npm run test:client",
     "dev:evm": "npm run evm: -- dev",
     "dev:client": "npm run client: -- dev",
-    "dev": "concurrently \"npm run dev:*\""
+    "dev": "concurrently \"npm run dev:*\"",
+    "predeploy": "vercel build",
+    "deploy": "vercel deploy --prebuilt"
   },
   "keywords": [],
   "author": "the-vampiire",
@@ -31,9 +33,11 @@
     "eslint": "^7.3.2",
     "eslint-config-prettier": "^8.0.0",
     "prettier": "^2.4.1",
-    "typescript": "^4.6.3"
+    "typescript": "^4.6.3",
+    "vercel": "^25.1.0"
   },
   "dependencies": {
-    "ethers": "^5.6.8"
+    "ethers": "^5.6.8",
+    "next": "12.1.5"
   }
 }
