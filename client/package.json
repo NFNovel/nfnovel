@@ -11,7 +11,9 @@
     "start": "next start",
     "test": "npm run lint",
     "lint": "prettier-eslint \"src/**/*.@(ts|tsx)\" --list-different",
-    "fix": "prettier-eslint \"src/**/*.@(ts|tsx)\" --write"
+    "fix": "prettier-eslint \"src/**/*.@(ts|tsx)\" --write",
+    "predeploy": "vercel build",
+    "deploy": "vercel deploy --prebuilt"
   },
   "dependencies": {
     "@chakra-ui/icons": "^2.0.2",
@@ -26,6 +28,7 @@
     "framer-motion": "^6.3.10",
     "ipfs-core": "^0.14.3",
     "luxon": "^2.4.0",
+    "next": "^12.1.6",
     "next-connect": "^0.12.2",
     "nfnovel-dapp": "file:..",
     "react": "18.0.0",
@@ -47,7 +50,8 @@
     "eslint-plugin-react-hooks": "^4.4.0",
     "prettier-eslint": "^13.0.0",
     "prettier-eslint-cli": "^5.0.1",
-    "typescript": "4.6.3"
+    "typescript": "4.6.3",
+    "vercel": "^25.1.0"
   },
   "optionalDependencies": {
     "@next/swc-darwin-arm64": "^12.1.5"
