@@ -180,7 +180,7 @@ const ConnectedAccountDetails = (props: {
         <>
           <MenuDivider />
           {/* TODO: add auth context and SIWE */}
-          <MenuItem>Authenticate as Owner</MenuItem>
+          <MenuItem justifyContent={"center"}>Authenticate as Owner</MenuItem>
         </>
       )}
     </Box>
