@@ -36,9 +36,7 @@ export const ConnectedAccountContext = createContext<IConnectedAccountContext>({
 const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
   const { children } = props;
 
-  const { data: activeSigner } = useSigner();
-  const { network: providerNetwork } = useProvider();
-  const { activeConnector: activeWallet } = useConnect();
+  const { data: signer } = useSigner();
 
   const { nfnovelReader } = useNFNovel();
   const { renderSuccessToast } = useToastMessage({});
@@ -53,14 +51,9 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
   );
 
   const updateConnectedAccount = useCallback(async () => {
-    if (!activeWallet) return setConnectedAccount(null);
+    if (!signer) return setConnectedAccount(null);
 
-    const address = await activeWallet.getAccount();
-
-    const activeWalletChainId = await activeWallet.getChainId();
-    const signer = activeWalletChainId === providerNetwork.chainId && activeSigner ?
-      activeSigner :
-      null;
+    const address = await signer.getAddress();
 
     const ownedPanelTokenIds = await PanelOwnerService.getOwnedPanelTokenIds(
       nfnovelReader,
@@ -75,8 +68,7 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
     };
 
     setConnectedAccount(connectedAccount);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [activeWallet, activeSigner, providerNetwork]);
+  }, [signer, nfnovelReader]);
 
   useEffect(() => {
     updateConnectedAccount();
@@ -85,16 +77,13 @@ const ConnectedAccountProvider = (props: { children?: React.ReactNode }) => {
   useEffect(() => {
     if (connectedAccount?.address)
       renderSuccessToast(
-        `${activeWallet?.name} Wallet`,
-        <Text>
-          Connected as{" "}
-          <Tag
-            variant={"solid"}
-            color="black"
-          >
-            {connectedAccount?.address.slice(0, 6)}...
-          </Tag>
-        </Text>,
+        "Connected As",
+        <Tag
+          variant={"solid"}
+          color="black"
+        >
+          {connectedAccount.address}
+        </Tag>,
       );
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [connectedAccount?.address]);
