@@ -1,4 +1,3 @@
-import { Button, Spinner } from "@chakra-ui/react";
 import { useCallback, useState } from "react";
 import { useContractEvent } from "wagmi";
 

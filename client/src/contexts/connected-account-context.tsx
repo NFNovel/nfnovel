@@ -12,13 +12,13 @@ import useNFNovel from "src/hooks/use-nfnovel";
 import PanelOwnerService from "src/services/panel-owner-service";
 import useToastMessage from "src/hooks/use-toast-message";
 
-import type { BigNumber, Signer } from "ethers";
+import type { BigNumberish, Signer } from "ethers";
 
 export interface IConnectedAccount {
   address: string;
   signer: Signer | null;
   isPanelOwner: boolean;
-  ownedPanelTokenIds: (BigNumber | number)[];
+  ownedPanelTokenIds: BigNumberish[];
 }
 
 export interface IConnectedAccountContext {
